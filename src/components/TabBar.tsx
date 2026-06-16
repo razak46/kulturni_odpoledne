@@ -2,7 +2,7 @@ import type { Category } from '../types';
 import type { ReactNode } from 'react';
 
 const TABS: { id: Category; label: string }[] = [
-  { id: 'piva',    label: 'Piva' },
+  { id: 'piva',    label: 'Pivo & Limo' },
   { id: 'napoje',  label: 'Nápoje' },
   { id: 'alkohol', label: 'Alkohol' },
   { id: 'jidlo',   label: 'Jídlo' },

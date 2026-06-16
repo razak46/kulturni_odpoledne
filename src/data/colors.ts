@@ -8,7 +8,7 @@ export const CATEGORY_BG: Record<Category, string> = {
 };
 
 export const CATEGORY_LABEL: Record<Category, string> = {
-  piva:    'Piva',
+  piva:    'Pivo & Limo',
   napoje:  'Nápoje',
   alkohol: 'Alkohol',
   jidlo:   'Jídlo',
