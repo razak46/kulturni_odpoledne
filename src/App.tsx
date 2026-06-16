@@ -2,12 +2,14 @@ import { useState } from 'react';
 import type { Category, MenuItem } from './types';
 import { useOrder } from './hooks/useOrder';
 import { useMenu } from './hooks/useMenu';
+import { useLogo } from './hooks/useLogo';
 import { TabBar } from './components/TabBar';
 import { MenuGrid } from './components/MenuGrid';
 import { AllCategoriesView } from './components/AllCategoriesView';
 import { OrderPanel } from './components/OrderPanel';
 import { AddItemModal } from './components/AddItemModal';
 import { PayButton } from './components/PayButton';
+import { LogoSlot } from './components/LogoSlot';
 
 type ViewMode = 'tabs' | 'all';
 
@@ -18,6 +20,7 @@ export default function App() {
   const [editMode, setEditMode] = useState(false);
   const [addFormCategory, setAddFormCategory] = useState<Category | null>(null);
   const [showResetMenuConfirm, setShowResetMenuConfirm] = useState(false);
+  const { logoUrl, uploadLogo, removeLogo } = useLogo();
 
   const { orderItems, addItem, removeItem, adjustQty, resetOrder, getQty, total, itemCount } = useOrder();
   const { items, addMenuItem, removeMenuItem, resetMenu } = useMenu();
@@ -127,16 +130,21 @@ export default function App() {
         {/* Left column */}
         <div className="flex-1 flex flex-col overflow-hidden" style={{ flexBasis: '65%' }}>
           {/* Sticky top bar */}
-          <div className="bg-white border-b border-[#E8E8E8] shrink-0">
-            {viewMode === 'tabs'
-              ? <TabBar activeTab={activeTab} onChange={setActiveTab} rightSlot={viewToggle} />
-              : (
-                <div className="flex items-center">
-                  <span className="flex-1 px-4 py-3 text-[13px] font-semibold text-[#1A1A1A]">Nabídka</span>
-                  <div className="px-3 py-2">{viewToggle}</div>
-                </div>
-              )
-            }
+          <div className="bg-white border-b border-[#E8E8E8] shrink-0 flex items-center">
+            <div className="pl-3">
+              <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} />
+            </div>
+            <div className="flex-1 min-w-0">
+              {viewMode === 'tabs'
+                ? <TabBar activeTab={activeTab} onChange={setActiveTab} rightSlot={viewToggle} />
+                : (
+                  <div className="flex items-center">
+                    <span className="flex-1 px-4 py-3 text-[13px] font-semibold text-[#1A1A1A]">Nabídka</span>
+                    <div className="px-3 py-2">{viewToggle}</div>
+                  </div>
+                )
+              }
+            </div>
           </div>
           {editMode && <EditBar />}
           <div className="flex-1 overflow-y-auto">
@@ -160,16 +168,21 @@ export default function App() {
       {/* ── Mobile single-column layout ── */}
       <div className="md:hidden flex flex-col min-h-screen pb-16">
         {/* Sticky top bar */}
-        <div className="sticky top-0 z-10 bg-white border-b border-[#E8E8E8] shrink-0">
-          {viewMode === 'tabs'
-            ? <TabBar activeTab={activeTab} onChange={setActiveTab} rightSlot={viewToggle} />
-            : (
-              <div className="flex items-center">
-                <span className="flex-1 px-4 py-3 text-[13px] font-semibold text-[#1A1A1A]">Nabídka</span>
-                <div className="px-3 py-2">{viewToggle}</div>
-              </div>
-            )
-          }
+        <div className="sticky top-0 z-10 bg-white border-b border-[#E8E8E8] shrink-0 flex items-center">
+          <div className="pl-3">
+            <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} />
+          </div>
+          <div className="flex-1 min-w-0">
+            {viewMode === 'tabs'
+              ? <TabBar activeTab={activeTab} onChange={setActiveTab} rightSlot={viewToggle} />
+              : (
+                <div className="flex items-center">
+                  <span className="flex-1 px-4 py-3 text-[13px] font-semibold text-[#1A1A1A]">Nabídka</span>
+                  <div className="px-3 py-2">{viewToggle}</div>
+                </div>
+              )
+            }
+          </div>
         </div>
         {editMode && <EditBar />}
         <MenuContent topOffset={editMode ? 81 : 45} />
