@@ -1,4 +1,10 @@
-import type { MenuItem } from '../types';
+import type { MenuItem, CardSize } from '../types';
+
+const SIZE_STYLES: Record<CardSize, { minH: string; py: string; nameFont: string }> = {
+  sm: { minH: 'min-h-[52px]',  py: 'py-2 px-3',        nameFont: 'text-[13px]' },
+  md: { minH: 'min-h-[72px]',  py: 'py-[14px] px-4',   nameFont: 'text-[15px]' },
+  lg: { minH: 'min-h-[96px]',  py: 'py-5 px-4',        nameFont: 'text-[17px]' },
+};
 
 interface Props {
   item: MenuItem;
@@ -9,11 +15,13 @@ interface Props {
 }
 
 export function ItemCard({ item, qty, onTap, dimmed, bgColor = '#FFFFFF' }: Props) {
+  const s = SIZE_STYLES[item.cardSize ?? 'md'];
+
   return (
     <button
       onClick={onTap}
       style={{ backgroundColor: bgColor }}
-      className={`relative text-left w-full min-h-[72px] py-[14px] px-4 rounded-[10px] transition-all ${
+      className={`relative text-left w-full ${s.minH} ${s.py} rounded-[10px] transition-all ${
         dimmed ? 'opacity-60' : 'active:scale-95'
       } ${qty > 0 && !dimmed ? 'border-2 border-[#1A1A1A]' : 'border border-[#E8E8E8]'}`}
     >
@@ -23,7 +31,7 @@ export function ItemCard({ item, qty, onTap, dimmed, bgColor = '#FFFFFF' }: Prop
         </span>
       )}
       <div className="pr-6">
-        <div className="text-[15px] font-semibold text-[#1A1A1A] leading-tight">
+        <div className={`${s.nameFont} font-semibold text-[#1A1A1A] leading-tight`}>
           {item.name}
         </div>
         <div className="flex justify-between items-center mt-1">

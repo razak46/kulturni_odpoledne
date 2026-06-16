@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
-import type { MenuItem, Category } from '../types';
+import type { MenuItem, Category, CardSize } from '../types';
+
+const SIZES: CardSize[] = ['sm', 'md', 'lg'];
 import { menuItems as defaultItems } from '../data/menu';
 
 const STORAGE_KEY = 'pos_menu_items_v1';
@@ -62,10 +64,24 @@ export function useMenu() {
     });
   }, []);
 
+  const resizeMenuItem = useCallback((id: string, delta: 1 | -1) => {
+    setItems(prev => {
+      const next = prev.map(item => {
+        if (item.id !== id) return item;
+        const current: CardSize = item.cardSize ?? 'md';
+        const idx = SIZES.indexOf(current);
+        const newIdx = Math.max(0, Math.min(SIZES.length - 1, idx + delta));
+        return { ...item, cardSize: SIZES[newIdx] };
+      });
+      persist(next);
+      return next;
+    });
+  }, []);
+
   const resetMenu = useCallback(() => {
     setItems(defaultItems);
     persist(defaultItems);
   }, []);
 
-  return { items, getCategoryItems, addMenuItem, removeMenuItem, resetMenu };
+  return { items, getCategoryItems, addMenuItem, removeMenuItem, resizeMenuItem, resetMenu };
 }

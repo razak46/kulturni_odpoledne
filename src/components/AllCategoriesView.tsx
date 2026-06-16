@@ -2,6 +2,7 @@ import type { MenuItem } from '../types';
 import { CATEGORY_ORDER, CATEGORY_LABEL, CATEGORY_BG } from '../data/colors';
 import { BeerCard } from './BeerCard';
 import { ItemCard } from './ItemCard';
+import { CardEditOverlay } from './CardEditOverlay';
 
 interface Props {
   items: MenuItem[];
@@ -9,18 +10,13 @@ interface Props {
   onAddItem: (item: MenuItem) => void;
   editMode: boolean;
   onDeleteItem: (id: string) => void;
+  onResizeItem: (id: string, delta: 1 | -1) => void;
   onOpenAddForm: (category: string) => void;
-  topOffset?: number; // px, for sticky header positioning
+  topOffset?: number;
 }
 
 export function AllCategoriesView({
-  items,
-  getQty,
-  onAddItem,
-  editMode,
-  onDeleteItem,
-  onOpenAddForm,
-  topOffset = 0,
+  items, getQty, onAddItem, editMode, onDeleteItem, onResizeItem, onOpenAddForm, topOffset = 0,
 }: Props) {
   return (
     <div>
@@ -31,7 +27,6 @@ export function AllCategoriesView({
 
         return (
           <div key={category} id={`section-${category}`}>
-            {/* Sticky section header */}
             <div
               className="sticky z-10 px-4 py-2 border-b border-[#E8E8E8]"
               style={{ top: topOffset, backgroundColor: bgColor }}
@@ -41,44 +36,31 @@ export function AllCategoriesView({
               </span>
             </div>
 
-            {/* Items grid */}
             <div className="p-3">
               <div className={`grid gap-3 ${isBeer ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'}`}>
                 {categoryItems.map(item =>
                   isBeer || item.isBeer ? (
                     <div key={item.id} className="relative">
-                      <BeerCard
-                        item={item}
-                        qty={getQty(item.id)}
-                        onTap={() => !editMode && onAddItem(item)}
-                        dimmed={editMode}
-                        bgColor={bgColor}
-                      />
+                      <BeerCard item={item} qty={getQty(item.id)} onTap={() => !editMode && onAddItem(item)} dimmed={editMode} bgColor={bgColor} />
                       {editMode && (
-                        <button
-                          onClick={() => onDeleteItem(item.id)}
-                          className="absolute top-2 left-2 w-7 h-7 rounded-full bg-[#C8102E] text-white text-[16px] flex items-center justify-center font-bold leading-none shadow-sm z-10"
-                        >
-                          −
-                        </button>
+                        <CardEditOverlay
+                          itemId={item.id}
+                          cardSize={item.cardSize ?? 'md'}
+                          onDelete={onDeleteItem}
+                          onResize={onResizeItem}
+                        />
                       )}
                     </div>
                   ) : (
                     <div key={item.id} className="relative">
-                      <ItemCard
-                        item={item}
-                        qty={getQty(item.id)}
-                        onTap={() => !editMode && onAddItem(item)}
-                        dimmed={editMode}
-                        bgColor={bgColor}
-                      />
+                      <ItemCard item={item} qty={getQty(item.id)} onTap={() => !editMode && onAddItem(item)} dimmed={editMode} bgColor={bgColor} />
                       {editMode && (
-                        <button
-                          onClick={() => onDeleteItem(item.id)}
-                          className="absolute top-2 left-2 w-7 h-7 rounded-full bg-[#C8102E] text-white text-[16px] flex items-center justify-center font-bold leading-none shadow-sm z-10"
-                        >
-                          −
-                        </button>
+                        <CardEditOverlay
+                          itemId={item.id}
+                          cardSize={item.cardSize ?? 'md'}
+                          onDelete={onDeleteItem}
+                          onResize={onResizeItem}
+                        />
                       )}
                     </div>
                   )

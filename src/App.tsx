@@ -23,7 +23,7 @@ export default function App() {
   const { logoUrl, uploadLogo, removeLogo } = useLogo();
 
   const { orderItems, addItem, removeItem, adjustQty, resetOrder, getQty, total, itemCount } = useOrder();
-  const { items, addMenuItem, removeMenuItem, resetMenu } = useMenu();
+  const { items, addMenuItem, removeMenuItem, resizeMenuItem, resetMenu } = useMenu();
 
   const handleAddItem = (item: MenuItem, afterId: string) => addMenuItem(item, afterId);
 
@@ -117,6 +117,7 @@ export default function App() {
         onAddItem={addItem}
         editMode={editMode}
         onDeleteItem={removeMenuItem}
+        onResizeItem={resizeMenuItem}
         onOpenAddForm={() => setAddFormCategory(activeTab)}
       />
     ) : (
@@ -126,6 +127,7 @@ export default function App() {
         onAddItem={addItem}
         editMode={editMode}
         onDeleteItem={removeMenuItem}
+        onResizeItem={resizeMenuItem}
         onOpenAddForm={(cat) => setAddFormCategory(cat as Category)}
         topOffset={topOffset}
       />
