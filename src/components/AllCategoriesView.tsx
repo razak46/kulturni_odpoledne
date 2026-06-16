@@ -18,7 +18,7 @@ interface Props {
   topOffset?: number;
 }
 
-export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDeleteItem, onResizeItem, onEditItem, onReorder, onOpenAddForm, topOffset = 0 }: Props) {
+export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDeleteItem, onResizeItem, onEditItem, onReorder, onOpenAddForm }: Props) {
   const dragId = useRef<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
@@ -43,18 +43,32 @@ export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDelete
 
   return (
     <div>
-      {CATEGORY_ORDER.map(category => {
+      {CATEGORY_ORDER.map((category, sectionIdx) => {
         const categoryItems = items.filter(i => i.category === category);
         const isBeer = category === 'piva';
         const bgColor = CATEGORY_BG[category];
 
         return (
-          <div key={category} id={`section-${category}`}>
-            <div className="sticky z-10 px-4 py-2 border-b border-[#E8E8E8]" style={{ top: topOffset, backgroundColor: bgColor }}>
-              <span className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#6B6B6B]">{CATEGORY_LABEL[category]}</span>
+          <div
+            key={category}
+            id={`section-${category}`}
+            className={`flex ${sectionIdx > 0 ? 'border-t-4 border-[#F0F0F0]' : ''}`}
+          >
+            {/* Vertical category label — left sidebar */}
+            <div
+              className="shrink-0 flex items-center justify-center py-4"
+              style={{ width: 32, backgroundColor: bgColor }}
+            >
+              <span
+                className="text-[10px] uppercase font-bold tracking-[0.15em] text-[#9B9B9B] select-none"
+                style={{ writingMode: 'vertical-lr', transform: 'rotate(180deg)' }}
+              >
+                {CATEGORY_LABEL[category]}
+              </span>
             </div>
 
-            <div className="p-3">
+            {/* Items grid */}
+            <div className="flex-1 min-w-0 p-3">
               <div className={`grid gap-3 ${isBeer ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'}`}>
                 {categoryItems.map(item => (
                   <div

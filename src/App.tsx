@@ -111,7 +111,7 @@ export default function App() {
   );
 
   // Menu content
-  const MenuContent = ({ topOffset = 0 }: { topOffset?: number }) => (
+  const MenuContent = () => (
     viewMode === 'tabs' ? (
       <MenuGrid
         activeTab={activeTab}
@@ -136,7 +136,6 @@ export default function App() {
         onEditItem={setEditingItemId}
         onReorder={reorderMenuItems}
         onOpenAddForm={(cat) => setAddFormCategory(cat as Category)}
-        topOffset={topOffset}
       />
     )
   );
@@ -167,7 +166,7 @@ export default function App() {
           </div>
           {editMode && <EditBar />}
           <div className="flex-1 overflow-y-auto">
-            <MenuContent topOffset={editMode ? 81 : 45} />
+            <MenuContent />
           </div>
         </div>
 
@@ -203,7 +202,7 @@ export default function App() {
           </div>
         </div>
         {editMode && <EditBar />}
-        <MenuContent topOffset={editMode ? 81 : 45} />
+        <MenuContent />
       </div>
 
       {/* Mobile sticky bottom bar */}
