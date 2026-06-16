@@ -6,6 +6,7 @@ import { TabBar } from './components/TabBar';
 import { MenuGrid } from './components/MenuGrid';
 import { OrderPanel } from './components/OrderPanel';
 import { AddItemModal } from './components/AddItemModal';
+import { PayButton } from './components/PayButton';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Category>('piva');
@@ -14,7 +15,7 @@ export default function App() {
   const [addFormOpen, setAddFormOpen] = useState(false);
   const [showResetMenuConfirm, setShowResetMenuConfirm] = useState(false);
 
-  const { orderItems, addItem, removeItem, adjustQty, resetOrder, getQty, total } = useOrder();
+  const { orderItems, addItem, removeItem, adjustQty, resetOrder, getQty, total, itemCount } = useOrder();
   const { items, addMenuItem, removeMenuItem, resetMenu } = useMenu();
 
   const handleAddItem = (item: MenuItem, afterId: string) => {
@@ -192,6 +193,26 @@ export default function App() {
           onClose={() => setAddFormOpen(false)}
         />
       )}
+
+      {/* FAB: Uhradit a Zadat další objednávku — desktop (right panel area, above any sheet) */}
+      <div className="hidden md:block">
+        <PayButton
+          total={total}
+          itemCount={itemCount}
+          onPay={resetOrder}
+          bottomOffset="bottom-6"
+        />
+      </div>
+
+      {/* FAB: mobile — above sticky bottom bar */}
+      <div className="md:hidden">
+        <PayButton
+          total={total}
+          itemCount={itemCount}
+          onPay={() => { resetOrder(); setSheetOpen(false); }}
+          bottomOffset="bottom-20"
+        />
+      </div>
     </div>
   );
 }

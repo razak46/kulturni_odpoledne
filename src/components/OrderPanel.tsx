@@ -21,17 +21,17 @@ export function OrderPanel({
   onClose,
   isSheet = false,
 }: Props) {
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const handleReset = () => {
     onReset();
-    setShowConfirm(false);
+    setShowResetConfirm(false);
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+      <div className="px-5 pt-5 pb-3 flex items-center justify-between shrink-0">
         {isSheet && (
           <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-[#E8E8E8] rounded-full" />
         )}
@@ -45,8 +45,8 @@ export function OrderPanel({
         )}
       </div>
 
-      {/* Order list */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Order list — scrollable */}
+      <div className="flex-1 overflow-y-auto min-h-0">
         {orderItems.length === 0 ? (
           <div className="flex items-center justify-center h-20 text-[14px] text-[#9B9B9B]">
             Zatím nic
@@ -112,14 +112,14 @@ export function OrderPanel({
           {total} Kč
         </div>
 
-        {showConfirm ? (
+        {showResetConfirm ? (
           <ResetConfirm
             onConfirm={handleReset}
-            onCancel={() => setShowConfirm(false)}
+            onCancel={() => setShowResetConfirm(false)}
           />
         ) : (
           <button
-            onClick={() => setShowConfirm(true)}
+            onClick={() => setShowResetConfirm(true)}
             className="w-full h-11 mt-3 border-[1.5px] border-[#C8102E] bg-white text-[#C8102E] rounded-[10px] text-[14px] font-medium"
           >
             Resetovat objednávku
