@@ -41,7 +41,7 @@ export default function App() {
   // Edit mode banner shown below the top bar
   const EditBar = () => (
     <div className="bg-[#1A1A1A] px-4 py-2 flex items-center justify-between shrink-0">
-      <span className="text-[12px] text-white font-medium tracking-wide">Upravit nabídku</span>
+      <span className="text-[12px] text-white font-medium tracking-wide">Úprava nabídky — klepnutím na − odstraníte položku</span>
       <div className="flex items-center gap-3">
         {showResetMenuConfirm ? (
           <div className="flex items-center gap-2">
@@ -62,7 +62,22 @@ export default function App() {
     </div>
   );
 
-  // View mode toggle — rendered inline as rightSlot of TopBar
+  // Edit toggle button — used in top bar
+  const editBtn = (
+    <button
+      onClick={toggleEdit}
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors whitespace-nowrap ${
+        editMode
+          ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
+          : 'bg-[#F0F0F0] text-[#1A1A1A] border-[#E8E8E8]'
+      }`}
+    >
+      <span className="text-[14px] leading-none">{editMode ? '✓' : '✎'}</span>
+      <span>{editMode ? 'Hotovo' : 'Upravit'}</span>
+    </button>
+  );
+
+  // View mode toggle pill
   const viewToggle = (
     <div className="flex items-center bg-[#F0F0F0] rounded-lg p-[3px]">
       <button
@@ -84,20 +99,15 @@ export default function App() {
     </div>
   );
 
-  // Floating edit FAB — bottom-left
-  const EditFab = () => (
-    <button
-      onClick={toggleEdit}
-      className={`fixed bottom-6 left-4 z-40 flex items-center gap-2 px-4 py-3 rounded-2xl shadow-lg text-[13px] font-semibold transition-colors ${
-        editMode ? 'bg-[#1A1A1A] text-white' : 'bg-white border border-[#E8E8E8] text-[#6B6B6B]'
-      }`}
-    >
-      <span className="text-[16px] leading-none">{editMode ? '✓' : '✎'}</span>
-      <span>{editMode ? 'Hotovo' : 'Upravit nabídku'}</span>
-    </button>
+  // Controls group: view toggle + edit button — right side of top bar
+  const topBarControls = (
+    <div className="flex items-center gap-2 pr-3">
+      {viewToggle}
+      {editBtn}
+    </div>
   );
 
-  // Shared menu content depending on view mode
+  // Menu content
   const MenuContent = ({ topOffset = 0 }: { topOffset?: number }) => (
     viewMode === 'tabs' ? (
       <MenuGrid
@@ -129,18 +139,18 @@ export default function App() {
       <div className="hidden md:flex h-screen overflow-hidden">
         {/* Left column */}
         <div className="flex-1 flex flex-col overflow-hidden" style={{ flexBasis: '65%' }}>
-          {/* Sticky top bar */}
+          {/* Top bar: logo + tabs + controls */}
           <div className="bg-white border-b border-[#E8E8E8] shrink-0 flex items-center">
-            <div className="pl-3">
+            <div className="pl-3 shrink-0">
               <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} />
             </div>
             <div className="flex-1 min-w-0">
               {viewMode === 'tabs'
-                ? <TabBar activeTab={activeTab} onChange={setActiveTab} rightSlot={viewToggle} />
+                ? <TabBar activeTab={activeTab} onChange={setActiveTab} rightSlot={topBarControls} />
                 : (
                   <div className="flex items-center">
                     <span className="flex-1 px-4 py-3 text-[13px] font-semibold text-[#1A1A1A]">Nabídka</span>
-                    <div className="px-3 py-2">{viewToggle}</div>
+                    {topBarControls}
                   </div>
                 )
               }
@@ -148,7 +158,6 @@ export default function App() {
           </div>
           {editMode && <EditBar />}
           <div className="flex-1 overflow-y-auto">
-            {/* topOffset: tab bar height (45px) + optional edit bar (36px) */}
             <MenuContent topOffset={editMode ? 81 : 45} />
           </div>
         </div>
@@ -169,16 +178,16 @@ export default function App() {
       <div className="md:hidden flex flex-col min-h-screen pb-16">
         {/* Sticky top bar */}
         <div className="sticky top-0 z-10 bg-white border-b border-[#E8E8E8] shrink-0 flex items-center">
-          <div className="pl-3">
+          <div className="pl-3 shrink-0">
             <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} />
           </div>
           <div className="flex-1 min-w-0">
             {viewMode === 'tabs'
-              ? <TabBar activeTab={activeTab} onChange={setActiveTab} rightSlot={viewToggle} />
+              ? <TabBar activeTab={activeTab} onChange={setActiveTab} rightSlot={topBarControls} />
               : (
                 <div className="flex items-center">
                   <span className="flex-1 px-4 py-3 text-[13px] font-semibold text-[#1A1A1A]">Nabídka</span>
-                  <div className="px-3 py-2">{viewToggle}</div>
+                  {topBarControls}
                 </div>
               )
             }
@@ -231,9 +240,6 @@ export default function App() {
           onClose={() => setAddFormCategory(null)}
         />
       )}
-
-      {/* Edit FAB — always visible, bottom-left */}
-      <EditFab />
 
       {/* Pay FAB — bottom-right, visible when order non-empty */}
       <div className="hidden md:block">
