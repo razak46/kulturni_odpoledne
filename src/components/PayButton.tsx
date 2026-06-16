@@ -4,12 +4,19 @@ interface Props {
   total: number;
   itemCount: number;
   onPay: () => void;
-  bottomOffset?: string;
+  bottomRem?: number; // base bottom offset in rem
 }
 
-export function PayButton({ total, itemCount, onPay, bottomOffset = 'bottom-6' }: Props) {
+export function PayButton({ total, itemCount, onPay, bottomRem = 1.5 }: Props) {
   const [confirm, setConfirm] = useState(false);
   const [done, setDone] = useState(false);
+
+  const posStyle = {
+    position: 'fixed' as const,
+    right: '1rem',
+    bottom: `max(${bottomRem}rem, calc(${bottomRem}rem + env(safe-area-inset-bottom, 0px)))`,
+    zIndex: 40,
+  };
 
   const handleConfirm = () => {
     setDone(true);
@@ -27,7 +34,7 @@ export function PayButton({ total, itemCount, onPay, bottomOffset = 'bottom-6' }
 
   if (done) {
     return (
-      <div className={`fixed right-4 ${bottomOffset} z-40`}>
+      <div style={posStyle}>
         <div className="bg-[#1A1A1A] text-white rounded-2xl px-5 py-3 text-[14px] font-semibold shadow-lg flex items-center gap-2">
           <span className="text-[18px]">✓</span>
           <span>Hotovo!</span>
@@ -38,7 +45,7 @@ export function PayButton({ total, itemCount, onPay, bottomOffset = 'bottom-6' }
 
   if (confirm) {
     return (
-      <div className={`fixed right-4 ${bottomOffset} z-40`}>
+      <div style={posStyle}>
         <div className="bg-white border border-[#E8E8E8] rounded-2xl px-4 py-3 shadow-lg min-w-[220px]">
           <p className="text-[13px] text-[#1A1A1A] font-medium mb-1">
             Dokončit objednávku {total} Kč?
@@ -63,7 +70,7 @@ export function PayButton({ total, itemCount, onPay, bottomOffset = 'bottom-6' }
   }
 
   return (
-    <div className={`fixed right-4 ${bottomOffset} z-40`}>
+    <div style={posStyle}>
       <button
         onClick={handleClick}
         className={`rounded-2xl px-5 py-3 text-[14px] font-semibold shadow-lg transition-all whitespace-nowrap ${

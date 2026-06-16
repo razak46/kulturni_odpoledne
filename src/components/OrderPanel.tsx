@@ -7,6 +7,10 @@ interface Props {
   onRemove: (id: string) => void;
   onClose?: () => void;
   isSheet?: boolean;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  canZoomIn?: boolean;
+  canZoomOut?: boolean;
 }
 
 export function OrderPanel({
@@ -16,6 +20,10 @@ export function OrderPanel({
   onRemove,
   onClose,
   isSheet = false,
+  onZoomIn,
+  onZoomOut,
+  canZoomIn = true,
+  canZoomOut = true,
 }: Props) {
 
   return (
@@ -28,11 +36,33 @@ export function OrderPanel({
         <span className="text-[11px] uppercase tracking-[0.1em] text-[#9B9B9B] font-medium">
           Objednávka
         </span>
-        {isSheet && onClose && (
-          <button onClick={onClose} className="text-[#9B9B9B] text-sm">
-            Zavřít
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {(onZoomOut || onZoomIn) && (
+            <>
+              <button
+                onClick={onZoomOut}
+                disabled={!canZoomOut}
+                className="w-7 h-7 flex items-center justify-center rounded-md border border-[#E8E8E8] text-[#1A1A1A] text-[15px] font-bold disabled:opacity-30"
+                title="Zmenšit text"
+              >
+                A−
+              </button>
+              <button
+                onClick={onZoomIn}
+                disabled={!canZoomIn}
+                className="w-7 h-7 flex items-center justify-center rounded-md border border-[#E8E8E8] text-[#1A1A1A] text-[15px] font-bold disabled:opacity-30"
+                title="Zvětšit text"
+              >
+                A+
+              </button>
+            </>
+          )}
+          {isSheet && onClose && (
+            <button onClick={onClose} className="ml-1 text-[#9B9B9B] text-sm">
+              Zavřít
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Order list — scrollable */}

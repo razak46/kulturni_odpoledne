@@ -4,6 +4,7 @@ import { useOrder } from './hooks/useOrder';
 import { useMenu } from './hooks/useMenu';
 import { useLogo } from './hooks/useLogo';
 import { useFullscreen } from './hooks/useFullscreen';
+import { useFontScale } from './hooks/useFontScale';
 import { TabBar } from './components/TabBar';
 import { MenuGrid } from './components/MenuGrid';
 import { AllCategoriesView } from './components/AllCategoriesView';
@@ -28,6 +29,7 @@ export default function App() {
 
   const { logoUrl, uploadLogo, removeLogo } = useLogo();
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
+  const { zoomIn, zoomOut, canZoomIn, canZoomOut } = useFontScale();
 
   const { orderItems, addItem, removeItem, adjustQty, resetOrder, getQty, total, itemCount } = useOrder();
   const { items, addMenuItem, removeMenuItem, updateMenuItem, resizeMenuItem, reorderMenuItems, resetMenu } = useMenu();
@@ -201,14 +203,18 @@ export default function App() {
             total={total}
             onAdjustQty={adjustQty}
             onRemove={removeItem}
+            onZoomIn={zoomIn}
+            onZoomOut={zoomOut}
+            canZoomIn={canZoomIn}
+            canZoomOut={canZoomOut}
           />
         </div>
       </div>
 
       {/* ── Mobile single-column layout ── */}
-      <div className="md:hidden flex flex-col min-h-screen pb-16">
-        {/* Sticky top bar */}
-        <div className="sticky top-0 z-10 bg-white border-b border-[#E8E8E8] shrink-0 flex items-center">
+      <div className="md:hidden fixed inset-0 flex flex-col overflow-hidden" style={{ paddingBottom: 64 }}>
+        {/* Top bar */}
+        <div className="bg-white border-b border-[#E8E8E8] shrink-0 flex items-center z-10">
           <div className="pl-3 shrink-0">
             <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} />
           </div>
@@ -221,7 +227,9 @@ export default function App() {
           </div>
         </div>
         {editMode && <EditBar />}
-        <MenuContent />
+        <div className="flex-1 overflow-y-auto">
+          <MenuContent />
+        </div>
       </div>
 
       {/* Mobile sticky bottom bar */}
@@ -250,6 +258,10 @@ export default function App() {
                 onAdjustQty={adjustQty}
                 onRemove={removeItem}
                 onClose={() => setSheetOpen(false)}
+                onZoomIn={zoomIn}
+                onZoomOut={zoomOut}
+                canZoomIn={canZoomIn}
+                canZoomOut={canZoomOut}
                 isSheet
               />
             </div>
@@ -281,14 +293,14 @@ export default function App() {
 
       {/* Dokončit FAB — always visible bottom-right */}
       <div className="hidden md:block">
-        <PayButton total={total} itemCount={itemCount} onPay={resetOrder} bottomOffset="bottom-6" />
+        <PayButton total={total} itemCount={itemCount} onPay={resetOrder} bottomRem={1.5} />
       </div>
       <div className="md:hidden">
         <PayButton
           total={total}
           itemCount={itemCount}
           onPay={() => { resetOrder(); setSheetOpen(false); }}
-          bottomOffset="bottom-20"
+          bottomRem={5}
         />
       </div>
     </div>
