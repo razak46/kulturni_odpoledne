@@ -1,4 +1,5 @@
 import type { Category, MenuItem } from '../types';
+import { CATEGORY_BG } from '../data/colors';
 import { BeerCard } from './BeerCard';
 import { ItemCard } from './ItemCard';
 
@@ -15,14 +16,11 @@ interface Props {
 export function MenuGrid({ activeTab, items, getQty, onAddItem, editMode, onDeleteItem, onOpenAddForm }: Props) {
   const categoryItems = items.filter(item => item.category === activeTab);
   const isBeerTab = activeTab === 'piva';
+  const bgColor = CATEGORY_BG[activeTab];
 
   return (
     <div className="p-3">
-      <div
-        className={`grid gap-3 ${
-          isBeerTab ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'
-        }`}
-      >
+      <div className={`grid gap-3 ${isBeerTab ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'}`}>
         {categoryItems.map(item =>
           isBeerTab || item.isBeer ? (
             <div key={item.id} className="relative">
@@ -31,12 +29,12 @@ export function MenuGrid({ activeTab, items, getQty, onAddItem, editMode, onDele
                 qty={getQty(item.id)}
                 onTap={() => !editMode && onAddItem(item)}
                 dimmed={editMode}
+                bgColor={bgColor}
               />
               {editMode && (
                 <button
                   onClick={() => onDeleteItem(item.id)}
                   className="absolute top-2 left-2 w-7 h-7 rounded-full bg-[#C8102E] text-white text-[16px] flex items-center justify-center font-bold leading-none shadow-sm z-10"
-                  aria-label="Smazat položku"
                 >
                   −
                 </button>
@@ -49,12 +47,12 @@ export function MenuGrid({ activeTab, items, getQty, onAddItem, editMode, onDele
                 qty={getQty(item.id)}
                 onTap={() => !editMode && onAddItem(item)}
                 dimmed={editMode}
+                bgColor={bgColor}
               />
               {editMode && (
                 <button
                   onClick={() => onDeleteItem(item.id)}
                   className="absolute top-2 left-2 w-7 h-7 rounded-full bg-[#C8102E] text-white text-[16px] flex items-center justify-center font-bold leading-none shadow-sm z-10"
-                  aria-label="Smazat položku"
                 >
                   −
                 </button>
@@ -63,7 +61,6 @@ export function MenuGrid({ activeTab, items, getQty, onAddItem, editMode, onDele
           )
         )}
 
-        {/* Add new item button (only in edit mode) */}
         {editMode && (
           <button
             onClick={onOpenAddForm}

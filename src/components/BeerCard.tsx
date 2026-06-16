@@ -5,13 +5,15 @@ interface Props {
   qty: number;
   onTap: () => void;
   dimmed?: boolean;
+  bgColor?: string;
 }
 
-export function BeerCard({ item, qty, onTap, dimmed }: Props) {
+export function BeerCard({ item, qty, onTap, dimmed, bgColor = '#FFFFFF' }: Props) {
   return (
     <button
       onClick={onTap}
-      className={`relative text-left w-full min-h-[130px] p-4 rounded-xl bg-white transition-all ${
+      style={{ backgroundColor: bgColor }}
+      className={`relative text-left w-full min-h-[130px] p-4 rounded-xl transition-all ${
         dimmed ? 'opacity-60' : 'active:scale-95'
       } ${qty > 0 && !dimmed ? 'border-2 border-[#1A1A1A]' : 'border border-[#E8E8E8]'}`}
     >
@@ -25,7 +27,7 @@ export function BeerCard({ item, qty, onTap, dimmed }: Props) {
           <div className="text-[36px] font-extrabold text-[#1A1A1A] leading-tight">
             {item.size}
           </div>
-          <div className="text-sm font-medium text-[#6B6B6B] mt-1">
+          <div className="text-base font-bold text-[#1A1A1A] mt-1">
             {item.name}
           </div>
         </div>

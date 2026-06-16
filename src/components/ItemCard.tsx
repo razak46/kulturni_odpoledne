@@ -5,13 +5,15 @@ interface Props {
   qty: number;
   onTap: () => void;
   dimmed?: boolean;
+  bgColor?: string;
 }
 
-export function ItemCard({ item, qty, onTap, dimmed }: Props) {
+export function ItemCard({ item, qty, onTap, dimmed, bgColor = '#FFFFFF' }: Props) {
   return (
     <button
       onClick={onTap}
-      className={`relative text-left w-full min-h-[72px] py-[14px] px-4 rounded-[10px] bg-white transition-all ${
+      style={{ backgroundColor: bgColor }}
+      className={`relative text-left w-full min-h-[72px] py-[14px] px-4 rounded-[10px] transition-all ${
         dimmed ? 'opacity-60' : 'active:scale-95'
       } ${qty > 0 && !dimmed ? 'border-2 border-[#1A1A1A]' : 'border border-[#E8E8E8]'}`}
     >
