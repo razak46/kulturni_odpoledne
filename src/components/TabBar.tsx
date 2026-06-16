@@ -1,4 +1,5 @@
 import type { Category } from '../types';
+import type { ReactNode } from 'react';
 
 const TABS: { id: Category; label: string }[] = [
   { id: 'piva',    label: 'Piva' },
@@ -10,11 +11,12 @@ const TABS: { id: Category; label: string }[] = [
 interface Props {
   activeTab: Category;
   onChange: (tab: Category) => void;
+  rightSlot?: ReactNode;
 }
 
-export function TabBar({ activeTab, onChange }: Props) {
+export function TabBar({ activeTab, onChange, rightSlot }: Props) {
   return (
-    <div className="sticky top-0 z-10 bg-white border-b border-[#E8E8E8] flex">
+    <div className="flex items-stretch">
       {TABS.map(tab => (
         <button
           key={tab.id}
@@ -28,6 +30,11 @@ export function TabBar({ activeTab, onChange }: Props) {
           {tab.label}
         </button>
       ))}
+      {rightSlot && (
+        <div className="flex items-center px-3 shrink-0">
+          {rightSlot}
+        </div>
+      )}
     </div>
   );
 }

@@ -59,13 +59,13 @@ export default function App() {
     </div>
   );
 
-  // View mode toggle pill: Záložky | Vše
-  const ViewToggle = () => (
-    <div className="flex items-center bg-[#F0F0F0] rounded-lg p-[3px] shrink-0">
+  // View mode toggle — rendered inline as rightSlot of TopBar
+  const viewToggle = (
+    <div className="flex items-center bg-[#F0F0F0] rounded-lg p-[3px]">
       <button
         onClick={() => setViewMode('tabs')}
         className={`px-3 py-1 rounded-md text-[12px] font-medium transition-colors ${
-          viewMode === 'tabs' ? 'bg-white text-[#1A1A1A] shadow-sm' : 'text-[#9B9B9B]'
+          viewMode === 'tabs' ? 'bg-white text-[#1A1A1A]' : 'text-[#9B9B9B]'
         }`}
       >
         Záložky
@@ -73,7 +73,7 @@ export default function App() {
       <button
         onClick={() => setViewMode('all')}
         className={`px-3 py-1 rounded-md text-[12px] font-medium transition-colors ${
-          viewMode === 'all' ? 'bg-white text-[#1A1A1A] shadow-sm' : 'text-[#9B9B9B]'
+          viewMode === 'all' ? 'bg-white text-[#1A1A1A]' : 'text-[#9B9B9B]'
         }`}
       >
         Vše
@@ -126,17 +126,17 @@ export default function App() {
       <div className="hidden md:flex h-screen overflow-hidden">
         {/* Left column */}
         <div className="flex-1 flex flex-col overflow-hidden" style={{ flexBasis: '65%' }}>
-          {/* Top bar: tabs + view toggle */}
-          <div className="flex items-center bg-white border-b border-[#E8E8E8] shrink-0">
-            <div className="flex-1 overflow-hidden">
-              {viewMode === 'tabs'
-                ? <TabBar activeTab={activeTab} onChange={setActiveTab} />
-                : <div className="px-4 py-3 text-[13px] font-semibold text-[#1A1A1A]">Nabídka</div>
-              }
-            </div>
-            <div className="px-3">
-              <ViewToggle />
-            </div>
+          {/* Sticky top bar */}
+          <div className="bg-white border-b border-[#E8E8E8] shrink-0">
+            {viewMode === 'tabs'
+              ? <TabBar activeTab={activeTab} onChange={setActiveTab} rightSlot={viewToggle} />
+              : (
+                <div className="flex items-center">
+                  <span className="flex-1 px-4 py-3 text-[13px] font-semibold text-[#1A1A1A]">Nabídka</span>
+                  <div className="px-3 py-2">{viewToggle}</div>
+                </div>
+              )
+            }
           </div>
           {editMode && <EditBar />}
           <div className="flex-1 overflow-y-auto">
@@ -159,17 +159,17 @@ export default function App() {
 
       {/* ── Mobile single-column layout ── */}
       <div className="md:hidden flex flex-col min-h-screen pb-16">
-        {/* Top bar */}
-        <div className="flex items-center bg-white border-b border-[#E8E8E8] shrink-0">
-          <div className="flex-1 overflow-hidden">
-            {viewMode === 'tabs'
-              ? <TabBar activeTab={activeTab} onChange={setActiveTab} />
-              : <div className="px-4 py-3 text-[13px] font-semibold text-[#1A1A1A]">Nabídka</div>
-            }
-          </div>
-          <div className="px-3">
-            <ViewToggle />
-          </div>
+        {/* Sticky top bar */}
+        <div className="sticky top-0 z-10 bg-white border-b border-[#E8E8E8] shrink-0">
+          {viewMode === 'tabs'
+            ? <TabBar activeTab={activeTab} onChange={setActiveTab} rightSlot={viewToggle} />
+            : (
+              <div className="flex items-center">
+                <span className="flex-1 px-4 py-3 text-[13px] font-semibold text-[#1A1A1A]">Nabídka</span>
+                <div className="px-3 py-2">{viewToggle}</div>
+              </div>
+            )
+          }
         </div>
         {editMode && <EditBar />}
         <MenuContent topOffset={editMode ? 81 : 45} />
