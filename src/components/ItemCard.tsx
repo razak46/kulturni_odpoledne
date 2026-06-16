@@ -1,9 +1,9 @@
 import type { MenuItem, CardSize } from '../types';
 
-const SIZE_STYLES: Record<CardSize, { minH: string; py: string; nameFont: string }> = {
-  sm: { minH: 'min-h-[52px]',  py: 'py-2 px-3',        nameFont: 'text-[13px]' },
-  md: { minH: 'min-h-[72px]',  py: 'py-[14px] px-4',   nameFont: 'text-[15px]' },
-  lg: { minH: 'min-h-[96px]',  py: 'py-5 px-4',        nameFont: 'text-[17px]' },
+const SIZE_STYLES: Record<CardSize, { minH: string; py: string; font: string }> = {
+  sm: { minH: 'min-h-[52px]',  py: 'py-2 px-3',      font: 'text-[13px]' },
+  md: { minH: 'min-h-[72px]',  py: 'py-[14px] px-4', font: 'text-[15px]' },
+  lg: { minH: 'min-h-[96px]',  py: 'py-5 px-4',      font: 'text-[17px]' },
 };
 
 interface Props {
@@ -16,6 +16,7 @@ interface Props {
 
 export function ItemCard({ item, qty, onTap, dimmed, bgColor = '#FFFFFF' }: Props) {
   const s = SIZE_STYLES[item.cardSize ?? 'md'];
+  const label = item.size ? `${item.name} - ${item.size}` : item.name;
 
   return (
     <button
@@ -26,18 +27,17 @@ export function ItemCard({ item, qty, onTap, dimmed, bgColor = '#FFFFFF' }: Prop
       } ${qty > 0 && !dimmed ? 'border-2 border-[#1A1A1A]' : 'border border-[#E8E8E8]'}`}
     >
       {qty > 0 && (
-        <span className="absolute top-2 right-2 bg-[#C8102E] text-white rounded-full min-w-[24px] h-6 flex items-center justify-center text-xs font-bold px-1">
+        <span className="absolute top-2 right-2 bg-[#C8102E] text-white rounded-full min-w-[24px] h-6 flex items-center justify-center text-xs font-bold px-1 z-10">
           {qty}
         </span>
       )}
-      <div className="pr-6">
-        <div className={`${s.nameFont} font-semibold text-[#1A1A1A] leading-tight`}>
-          {item.name}
-        </div>
-        <div className="flex justify-between items-center mt-1">
-          <span className="text-[13px] text-[#6B6B6B]">{item.size ?? ''}</span>
-          <span className="text-[13px] font-semibold text-[#1A1A1A]">{item.price} Kč</span>
-        </div>
+      <div className="flex items-center justify-between gap-2 pr-6">
+        <span className={`${s.font} font-semibold text-[#1A1A1A] leading-tight`}>
+          {label}
+        </span>
+        <span className={`${s.font} font-bold text-[#1A1A1A] shrink-0`}>
+          {item.price} Kč
+        </span>
       </div>
     </button>
   );
