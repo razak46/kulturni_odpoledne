@@ -8,25 +8,41 @@ const CATEGORIES: { id: Category; label: string }[] = [
   { id: 'jidlo',   label: 'Jídlo' },
 ];
 
-interface Props {
+interface AddProps {
+  mode: 'add';
   activeCategory: Category;
   allItems: MenuItem[];
   onSave: (item: MenuItem, afterId: string) => void;
   onClose: () => void;
 }
 
+interface EditProps {
+  mode: 'edit';
+  editItem: MenuItem;
+  allItems: MenuItem[];
+  onUpdate: (item: MenuItem) => void;
+  onClose: () => void;
+}
+
+type Props = AddProps | EditProps;
+
 function genId() {
   return 'custom-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
 }
 
-export function AddItemModal({ activeCategory, allItems, onSave, onClose }: Props) {
-  const [name, setName] = useState('');
-  const [size, setSize] = useState('');
-  const [price, setPrice] = useState('');
-  const [category, setCategory] = useState<Category>(activeCategory);
+export function AddItemModal(props: Props) {
+  const isEdit = props.mode === 'edit';
+  const initial = isEdit ? props.editItem : null;
+
+  const [name, setName]       = useState(initial?.name ?? '');
+  const [size, setSize]       = useState(initial?.size ?? '');
+  const [price, setPrice]     = useState(initial ? String(initial.price) : '');
+  const [category, setCategory] = useState<Category>(
+    isEdit ? props.editItem.category : (props as AddProps).activeCategory
+  );
   const [afterId, setAfterId] = useState('__end__');
 
-  const filteredItems = allItems.filter(i => i.category === category);
+  const filteredItems = props.allItems.filter(i => i.category === category && (!isEdit || i.id !== initial?.id));
 
   const handleCategoryChange = (cat: Category) => {
     setCategory(cat);
@@ -37,45 +53,52 @@ export function AddItemModal({ activeCategory, allItems, onSave, onClose }: Prop
     const priceNum = parseInt(price, 10);
     if (!name.trim() || isNaN(priceNum) || priceNum <= 0) return;
 
-    const item: MenuItem = {
-      id: genId(),
-      name: name.trim(),
-      size: size.trim() || undefined,
-      price: priceNum,
-      category,
-      isBeer: category === 'piva',
-    };
-    onSave(item, afterId);
-    onClose();
+    if (isEdit) {
+      const updated: MenuItem = {
+        ...props.editItem,
+        name: name.trim(),
+        size: size.trim() || undefined,
+        price: priceNum,
+        category,
+        isBeer: category === 'piva',
+      };
+      props.onUpdate(updated);
+    } else {
+      const item: MenuItem = {
+        id: genId(),
+        name: name.trim(),
+        size: size.trim() || undefined,
+        price: priceNum,
+        category,
+        isBeer: category === 'piva',
+      };
+      (props as AddProps).onSave(item, afterId);
+    }
+    props.onClose();
   };
 
   const isValid = name.trim().length > 0 && parseInt(price, 10) > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40" onClick={props.onClose} />
 
-      {/* Modal */}
       <div className="relative w-full md:max-w-md bg-white rounded-t-2xl md:rounded-2xl overflow-hidden shadow-xl">
-        {/* Drag handle (mobile) */}
         <div className="md:hidden flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-[#E8E8E8] rounded-full" />
         </div>
 
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E8E8]">
-          <span className="text-[15px] font-semibold text-[#1A1A1A]">Nová položka</span>
-          <button onClick={onClose} className="text-[#9B9B9B] text-sm">Zrušit</button>
+          <span className="text-[15px] font-semibold text-[#1A1A1A]">
+            {isEdit ? 'Upravit položku' : 'Nová položka'}
+          </span>
+          <button onClick={props.onClose} className="text-[#9B9B9B] text-sm">Zrušit</button>
         </div>
 
-        {/* Form */}
         <div className="px-5 py-4 space-y-4 overflow-y-auto max-h-[70vh]">
           {/* Name */}
           <div>
-            <label className="block text-[11px] uppercase tracking-[0.08em] text-[#9B9B9B] mb-1">
-              Název *
-            </label>
+            <label className="block text-[11px] uppercase tracking-[0.08em] text-[#9B9B9B] mb-1">Název *</label>
             <input
               type="text"
               value={name}
@@ -101,9 +124,7 @@ export function AddItemModal({ activeCategory, allItems, onSave, onClose }: Prop
 
           {/* Price */}
           <div>
-            <label className="block text-[11px] uppercase tracking-[0.08em] text-[#9B9B9B] mb-1">
-              Cena (Kč) *
-            </label>
+            <label className="block text-[11px] uppercase tracking-[0.08em] text-[#9B9B9B] mb-1">Cena (Kč) *</label>
             <input
               type="number"
               inputMode="numeric"
@@ -117,9 +138,7 @@ export function AddItemModal({ activeCategory, allItems, onSave, onClose }: Prop
 
           {/* Category */}
           <div>
-            <label className="block text-[11px] uppercase tracking-[0.08em] text-[#9B9B9B] mb-1">
-              Kategorie
-            </label>
+            <label className="block text-[11px] uppercase tracking-[0.08em] text-[#9B9B9B] mb-1">Kategorie</label>
             <div className="grid grid-cols-4 gap-2">
               {CATEGORIES.map(cat => (
                 <button
@@ -137,39 +156,36 @@ export function AddItemModal({ activeCategory, allItems, onSave, onClose }: Prop
             </div>
           </div>
 
-          {/* Position */}
-          <div>
-            <label className="block text-[11px] uppercase tracking-[0.08em] text-[#9B9B9B] mb-1">
-              Umístění v nabídce
-            </label>
-            <select
-              value={afterId}
-              onChange={e => setAfterId(e.target.value)}
-              className="w-full border border-[#E8E8E8] rounded-[10px] px-3 py-2.5 text-[15px] text-[#1A1A1A] outline-none focus:border-[#1A1A1A] bg-white appearance-none"
-            >
-              <option value="__start__">Na začátek</option>
-              {filteredItems.map(item => (
-                <option key={item.id} value={item.id}>
-                  Za: {item.name}{item.size ? ` (${item.size})` : ''}
-                </option>
-              ))}
-              <option value="__end__">Na konec</option>
-            </select>
-          </div>
+          {/* Position — only for new items */}
+          {!isEdit && (
+            <div>
+              <label className="block text-[11px] uppercase tracking-[0.08em] text-[#9B9B9B] mb-1">Umístění v nabídce</label>
+              <select
+                value={afterId}
+                onChange={e => setAfterId(e.target.value)}
+                className="w-full border border-[#E8E8E8] rounded-[10px] px-3 py-2.5 text-[15px] text-[#1A1A1A] outline-none focus:border-[#1A1A1A] bg-white appearance-none"
+              >
+                <option value="__start__">Na začátek</option>
+                {filteredItems.map(item => (
+                  <option key={item.id} value={item.id}>
+                    Za: {item.name}{item.size ? ` (${item.size})` : ''}
+                  </option>
+                ))}
+                <option value="__end__">Na konec</option>
+              </select>
+            </div>
+          )}
         </div>
 
-        {/* Save button */}
         <div className="px-5 pb-6 pt-2">
           <button
             onClick={handleSave}
             disabled={!isValid}
             className={`w-full h-12 rounded-[10px] text-[15px] font-semibold transition-colors ${
-              isValid
-                ? 'bg-[#1A1A1A] text-white'
-                : 'bg-[#E8E8E8] text-[#9B9B9B] cursor-not-allowed'
+              isValid ? 'bg-[#1A1A1A] text-white' : 'bg-[#E8E8E8] text-[#9B9B9B] cursor-not-allowed'
             }`}
           >
-            Přidat položku
+            {isEdit ? 'Uložit změny' : 'Přidat položku'}
           </button>
         </div>
       </div>

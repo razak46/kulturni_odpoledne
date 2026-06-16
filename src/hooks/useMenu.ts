@@ -64,6 +64,14 @@ export function useMenu() {
     });
   }, []);
 
+  const updateMenuItem = useCallback((updated: MenuItem) => {
+    setItems(prev => {
+      const next = prev.map(i => i.id === updated.id ? updated : i);
+      persist(next);
+      return next;
+    });
+  }, []);
+
   const resizeMenuItem = useCallback((id: string, delta: 1 | -1) => {
     setItems(prev => {
       const next = prev.map(item => {
@@ -83,5 +91,16 @@ export function useMenu() {
     persist(defaultItems);
   }, []);
 
-  return { items, getCategoryItems, addMenuItem, removeMenuItem, resizeMenuItem, resetMenu };
+  const reorderMenuItems = useCallback((orderedIds: string[]) => {
+    setItems(prev => {
+      const map = new Map(prev.map(i => [i.id, i]));
+      const reordered = orderedIds.map(id => map.get(id)!).filter(Boolean);
+      const rest = prev.filter(i => !orderedIds.includes(i.id));
+      const next = [...reordered, ...rest];
+      persist(next);
+      return next;
+    });
+  }, []);
+
+  return { items, getCategoryItems, addMenuItem, removeMenuItem, updateMenuItem, resizeMenuItem, reorderMenuItems, resetMenu };
 }

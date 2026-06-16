@@ -23,7 +23,10 @@ export default function App() {
   const { logoUrl, uploadLogo, removeLogo } = useLogo();
 
   const { orderItems, addItem, removeItem, adjustQty, resetOrder, getQty, total, itemCount } = useOrder();
-  const { items, addMenuItem, removeMenuItem, resizeMenuItem, resetMenu } = useMenu();
+  const { items, addMenuItem, removeMenuItem, updateMenuItem, resizeMenuItem, reorderMenuItems, resetMenu } = useMenu();
+
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const editingItem = editingItemId ? items.find(i => i.id === editingItemId) ?? null : null;
 
   const handleAddItem = (item: MenuItem, afterId: string) => addMenuItem(item, afterId);
 
@@ -118,6 +121,8 @@ export default function App() {
         editMode={editMode}
         onDeleteItem={removeMenuItem}
         onResizeItem={resizeMenuItem}
+        onEditItem={setEditingItemId}
+        onReorder={reorderMenuItems}
         onOpenAddForm={() => setAddFormCategory(activeTab)}
       />
     ) : (
@@ -128,6 +133,8 @@ export default function App() {
         editMode={editMode}
         onDeleteItem={removeMenuItem}
         onResizeItem={resizeMenuItem}
+        onEditItem={setEditingItemId}
+        onReorder={reorderMenuItems}
         onOpenAddForm={(cat) => setAddFormCategory(cat as Category)}
         topOffset={topOffset}
       />
@@ -236,10 +243,22 @@ export default function App() {
       {/* Add item modal */}
       {addFormCategory !== null && (
         <AddItemModal
+          mode="add"
           activeCategory={addFormCategory}
           allItems={items}
           onSave={handleAddItem}
           onClose={() => setAddFormCategory(null)}
+        />
+      )}
+
+      {/* Edit item modal */}
+      {editingItem !== null && (
+        <AddItemModal
+          mode="edit"
+          editItem={editingItem}
+          allItems={items}
+          onUpdate={updateMenuItem}
+          onClose={() => setEditingItemId(null)}
         />
       )}
 

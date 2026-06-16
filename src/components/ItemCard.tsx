@@ -16,8 +16,6 @@ interface Props {
 
 export function ItemCard({ item, qty, onTap, dimmed, bgColor = '#FFFFFF' }: Props) {
   const s = SIZE_STYLES[item.cardSize ?? 'md'];
-  const label = item.size ? `${item.name} - ${item.size}` : item.name;
-
   return (
     <button
       onClick={onTap}
@@ -33,7 +31,8 @@ export function ItemCard({ item, qty, onTap, dimmed, bgColor = '#FFFFFF' }: Prop
       )}
       <div className="flex items-center justify-between gap-2 pr-6">
         <span className={`${s.font} font-semibold text-[#1A1A1A] leading-tight`}>
-          {label}
+          {item.name}
+          {item.size && <span className="font-bold text-[#C8102E]"> - {item.size}</span>}
         </span>
         <span className={`${s.font} font-bold text-[#1A1A1A] shrink-0`}>
           {item.price} Kč

@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import type { MenuItem } from '../types';
 import { CATEGORY_ORDER, CATEGORY_LABEL, CATEGORY_BG } from '../data/colors';
 import { BeerCard } from './BeerCard';
@@ -11,13 +12,35 @@ interface Props {
   editMode: boolean;
   onDeleteItem: (id: string) => void;
   onResizeItem: (id: string, delta: 1 | -1) => void;
+  onEditItem: (id: string) => void;
+  onReorder: (orderedIds: string[]) => void;
   onOpenAddForm: (category: string) => void;
   topOffset?: number;
 }
 
-export function AllCategoriesView({
-  items, getQty, onAddItem, editMode, onDeleteItem, onResizeItem, onOpenAddForm, topOffset = 0,
-}: Props) {
+export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDeleteItem, onResizeItem, onEditItem, onReorder, onOpenAddForm, topOffset = 0 }: Props) {
+  const dragId = useRef<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+
+  const handleDragStart = (id: string) => { dragId.current = id; };
+  const handleDragOver = (e: React.DragEvent, id: string) => { e.preventDefault(); setDragOverId(id); };
+  const handleDrop = (targetId: string, categoryItems: MenuItem[]) => {
+    if (!dragId.current || dragId.current === targetId) { setDragOverId(null); return; }
+    const ids = categoryItems.map(i => i.id);
+    const from = ids.indexOf(dragId.current);
+    const to = ids.indexOf(targetId);
+    if (from === -1 || to === -1) { setDragOverId(null); return; }
+    ids.splice(from, 1);
+    ids.splice(to, 0, dragId.current);
+    const catSet = new Set(categoryItems.map(i => i.id));
+    let ci = 0;
+    const newOrder = items.map(i => i.id).map(id => catSet.has(id) ? ids[ci++] : id);
+    onReorder(newOrder);
+    dragId.current = null;
+    setDragOverId(null);
+  };
+  const handleDragEnd = () => { dragId.current = null; setDragOverId(null); };
+
   return (
     <div>
       {CATEGORY_ORDER.map(category => {
@@ -27,44 +50,38 @@ export function AllCategoriesView({
 
         return (
           <div key={category} id={`section-${category}`}>
-            <div
-              className="sticky z-10 px-4 py-2 border-b border-[#E8E8E8]"
-              style={{ top: topOffset, backgroundColor: bgColor }}
-            >
-              <span className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#6B6B6B]">
-                {CATEGORY_LABEL[category]}
-              </span>
+            <div className="sticky z-10 px-4 py-2 border-b border-[#E8E8E8]" style={{ top: topOffset, backgroundColor: bgColor }}>
+              <span className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#6B6B6B]">{CATEGORY_LABEL[category]}</span>
             </div>
 
             <div className="p-3">
               <div className={`grid gap-3 ${isBeer ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'}`}>
-                {categoryItems.map(item =>
-                  isBeer || item.isBeer ? (
-                    <div key={item.id} className="relative">
-                      <BeerCard item={item} qty={getQty(item.id)} onTap={() => !editMode && onAddItem(item)} dimmed={editMode} bgColor={bgColor} />
-                      {editMode && (
-                        <CardEditOverlay
-                          itemId={item.id}
-                          cardSize={item.cardSize ?? 'md'}
-                          onDelete={onDeleteItem}
-                          onResize={onResizeItem}
-                        />
-                      )}
-                    </div>
-                  ) : (
-                    <div key={item.id} className="relative">
-                      <ItemCard item={item} qty={getQty(item.id)} onTap={() => !editMode && onAddItem(item)} dimmed={editMode} bgColor={bgColor} />
-                      {editMode && (
-                        <CardEditOverlay
-                          itemId={item.id}
-                          cardSize={item.cardSize ?? 'md'}
-                          onDelete={onDeleteItem}
-                          onResize={onResizeItem}
-                        />
-                      )}
-                    </div>
-                  )
-                )}
+                {categoryItems.map(item => (
+                  <div
+                    key={item.id}
+                    className="relative"
+                    draggable={editMode}
+                    onDragStart={() => handleDragStart(item.id)}
+                    onDragOver={e => editMode && handleDragOver(e, item.id)}
+                    onDrop={() => editMode && handleDrop(item.id, categoryItems)}
+                    onDragEnd={handleDragEnd}
+                    style={dragOverId === item.id ? { outline: '2px dashed #1A1A1A', borderRadius: 12, opacity: 0.8 } : undefined}
+                  >
+                    {isBeer || item.isBeer
+                      ? <BeerCard item={item} qty={getQty(item.id)} onTap={() => !editMode && onAddItem(item)} dimmed={editMode} bgColor={bgColor} />
+                      : <ItemCard item={item} qty={getQty(item.id)} onTap={() => !editMode && onAddItem(item)} dimmed={editMode} bgColor={bgColor} />
+                    }
+                    {editMode && (
+                      <CardEditOverlay
+                        itemId={item.id}
+                        cardSize={item.cardSize ?? 'md'}
+                        onDelete={onDeleteItem}
+                        onResize={onResizeItem}
+                        onEdit={onEditItem}
+                      />
+                    )}
+                  </div>
+                ))}
 
                 {editMode && (
                   <button
