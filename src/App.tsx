@@ -28,6 +28,12 @@ export default function App() {
     setEditMode(false);
   };
 
+  const toggleEdit = () => {
+    setEditMode(e => !e);
+    setShowResetMenuConfirm(false);
+  };
+
+  // Edit mode banner shown below tabs
   const EditBar = () => (
     <div className="bg-[#1A1A1A] px-4 py-2 flex items-center justify-between">
       <span className="text-[12px] text-white font-medium tracking-wide">
@@ -58,14 +64,23 @@ export default function App() {
             Obnovit výchozí
           </button>
         )}
-        <button
-          onClick={() => { setEditMode(false); setShowResetMenuConfirm(false); }}
-          className="text-[12px] bg-white/20 text-white px-3 py-1 rounded-lg font-medium"
-        >
-          Hotovo
-        </button>
       </div>
     </div>
+  );
+
+  // Floating edit FAB — bottom-left, always visible
+  const EditFab = () => (
+    <button
+      onClick={toggleEdit}
+      className={`fixed bottom-6 left-4 z-40 flex items-center gap-2 px-4 py-3 rounded-2xl shadow-lg text-[13px] font-semibold transition-colors ${
+        editMode
+          ? 'bg-[#1A1A1A] text-white'
+          : 'bg-white border border-[#E8E8E8] text-[#6B6B6B]'
+      }`}
+    >
+      <span className="text-[16px] leading-none">{editMode ? '✓' : '✎'}</span>
+      <span>{editMode ? 'Hotovo' : 'Upravit nabídku'}</span>
+    </button>
   );
 
   return (
@@ -74,21 +89,7 @@ export default function App() {
       <div className="hidden md:flex h-screen overflow-hidden">
         {/* Left column */}
         <div className="flex-1 flex flex-col overflow-hidden" style={{ flexBasis: '65%' }}>
-          <div className="flex items-center border-b border-[#E8E8E8] bg-white">
-            <div className="flex-1">
-              <TabBar activeTab={activeTab} onChange={setActiveTab} />
-            </div>
-            <button
-              onClick={() => setEditMode(e => !e)}
-              className={`mr-3 px-3 py-1.5 rounded-lg text-[12px] font-medium border transition-colors shrink-0 ${
-                editMode
-                  ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
-                  : 'border-[#E8E8E8] text-[#6B6B6B] bg-white'
-              }`}
-            >
-              {editMode ? 'Hotovo' : 'Upravit'}
-            </button>
-          </div>
+          <TabBar activeTab={activeTab} onChange={setActiveTab} />
           {editMode && <EditBar />}
           <div className="flex-1 overflow-y-auto">
             <MenuGrid
@@ -120,21 +121,7 @@ export default function App() {
 
       {/* Mobile single-column layout */}
       <div className="md:hidden flex flex-col min-h-screen pb-16">
-        <div className="flex items-center bg-white border-b border-[#E8E8E8]">
-          <div className="flex-1">
-            <TabBar activeTab={activeTab} onChange={setActiveTab} />
-          </div>
-          <button
-            onClick={() => setEditMode(e => !e)}
-            className={`mr-3 px-3 py-1.5 rounded-lg text-[12px] font-medium border transition-colors shrink-0 ${
-              editMode
-                ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
-                : 'border-[#E8E8E8] text-[#6B6B6B] bg-white'
-            }`}
-          >
-            {editMode ? 'Hotovo' : 'Upravit'}
-          </button>
-        </div>
+        <TabBar activeTab={activeTab} onChange={setActiveTab} />
         {editMode && <EditBar />}
         <MenuGrid
           activeTab={activeTab}
@@ -194,7 +181,11 @@ export default function App() {
         />
       )}
 
-      {/* FAB: Uhradit a Zadat další objednávku — desktop (right panel area, above any sheet) */}
+      {/* Edit FAB — always visible, bottom-left */}
+      <EditFab />
+
+      {/* Pay FAB — bottom-right, visible when order has items */}
+      {/* Desktop: bottom-6; Mobile: bottom-20 (above bottom bar) */}
       <div className="hidden md:block">
         <PayButton
           total={total}
@@ -203,8 +194,6 @@ export default function App() {
           bottomOffset="bottom-6"
         />
       </div>
-
-      {/* FAB: mobile — above sticky bottom bar */}
       <div className="md:hidden">
         <PayButton
           total={total}
