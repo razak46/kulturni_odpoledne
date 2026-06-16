@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import type { MenuItem } from '../types';
+import { useRef, useState, useEffect } from 'react';
+import type { MenuItem, Category } from '../types';
 import { CATEGORY_ORDER, CATEGORY_LABEL, CATEGORY_BG } from '../data/colors';
 import { BeerCard } from './BeerCard';
 import { ItemCard } from './ItemCard';
@@ -15,12 +15,34 @@ interface Props {
   onEditItem: (id: string) => void;
   onReorder: (orderedIds: string[]) => void;
   onOpenAddForm: (category: string) => void;
-  topOffset?: number;
+  onVisibleSection?: (cat: Category) => void;
 }
 
-export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDeleteItem, onResizeItem, onEditItem, onReorder, onOpenAddForm }: Props) {
+export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDeleteItem, onResizeItem, onEditItem, onReorder, onOpenAddForm, onVisibleSection }: Props) {
   const dragId = useRef<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!onVisibleSection) return;
+    const ratios = new Map<Category, number>();
+    const obs = new IntersectionObserver(
+      (changes) => {
+        changes.forEach(e => {
+          const cat = (e.target as HTMLElement).dataset.cat as Category;
+          ratios.set(cat, e.isIntersecting ? e.intersectionRatio : 0);
+        });
+        for (const cat of CATEGORY_ORDER) {
+          if ((ratios.get(cat) ?? 0) > 0) { onVisibleSection(cat); return; }
+        }
+      },
+      { rootMargin: '0px 0px -50% 0px', threshold: 0 },
+    );
+    CATEGORY_ORDER.forEach(cat => {
+      const el = document.getElementById(`section-${cat}`);
+      if (el) { (el as HTMLElement).dataset.cat = cat; obs.observe(el); }
+    });
+    return () => obs.disconnect();
+  }, [onVisibleSection]);
 
   const handleDragStart = (id: string) => { dragId.current = id; };
   const handleDragOver = (e: React.DragEvent, id: string) => { e.preventDefault(); setDragOverId(id); };

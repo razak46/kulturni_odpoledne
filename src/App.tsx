@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import type { Category, MenuItem } from './types';
 import { useOrder } from './hooks/useOrder';
 import { useMenu } from './hooks/useMenu';
@@ -15,11 +15,16 @@ type ViewMode = 'tabs' | 'all';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Category>('piva');
+  const [visibleSection, setVisibleSection] = useState<Category>('piva');
   const [viewMode, setViewMode] = useState<ViewMode>('tabs');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [addFormCategory, setAddFormCategory] = useState<Category | null>(null);
   const [showResetMenuConfirm, setShowResetMenuConfirm] = useState(false);
+  const scrollToSection = useCallback((cat: Category) => {
+    document.getElementById(`section-${cat}`)?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
   const { logoUrl, uploadLogo, removeLogo } = useLogo();
 
   const { orderItems, addItem, removeItem, adjustQty, resetOrder, getQty, total, itemCount } = useOrder();
@@ -136,6 +141,7 @@ export default function App() {
         onEditItem={setEditingItemId}
         onReorder={reorderMenuItems}
         onOpenAddForm={(cat) => setAddFormCategory(cat as Category)}
+        onVisibleSection={setVisibleSection}
       />
     )
   );
@@ -153,15 +159,11 @@ export default function App() {
               <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} />
             </div>
             <div className="flex-1 min-w-0">
-              {viewMode === 'tabs'
-                ? <TabBar activeTab={activeTab} onChange={setActiveTab} rightSlot={topBarControls} />
-                : (
-                  <div className="flex items-center">
-                    <span className="flex-1 px-4 py-3 text-[13px] font-semibold text-[#1A1A1A]">Nabídka</span>
-                    {topBarControls}
-                  </div>
-                )
-              }
+              <TabBar
+                activeTab={viewMode === 'tabs' ? activeTab : visibleSection}
+                onChange={viewMode === 'tabs' ? setActiveTab : scrollToSection}
+                rightSlot={topBarControls}
+              />
             </div>
           </div>
           {editMode && <EditBar />}
@@ -189,15 +191,11 @@ export default function App() {
             <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} />
           </div>
           <div className="flex-1 min-w-0">
-            {viewMode === 'tabs'
-              ? <TabBar activeTab={activeTab} onChange={setActiveTab} rightSlot={topBarControls} />
-              : (
-                <div className="flex items-center">
-                  <span className="flex-1 px-4 py-3 text-[13px] font-semibold text-[#1A1A1A]">Nabídka</span>
-                  {topBarControls}
-                </div>
-              )
-            }
+            <TabBar
+              activeTab={viewMode === 'tabs' ? activeTab : visibleSection}
+              onChange={viewMode === 'tabs' ? setActiveTab : scrollToSection}
+              rightSlot={topBarControls}
+            />
           </div>
         </div>
         {editMode && <EditBar />}
