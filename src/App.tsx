@@ -3,6 +3,7 @@ import type { Category, MenuItem } from './types';
 import { useOrder } from './hooks/useOrder';
 import { useMenu } from './hooks/useMenu';
 import { useLogo } from './hooks/useLogo';
+import { useFullscreen } from './hooks/useFullscreen';
 import { TabBar } from './components/TabBar';
 import { MenuGrid } from './components/MenuGrid';
 import { AllCategoriesView } from './components/AllCategoriesView';
@@ -26,6 +27,7 @@ export default function App() {
   }, []);
 
   const { logoUrl, uploadLogo, removeLogo } = useLogo();
+  const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
 
   const { orderItems, addItem, removeItem, adjustQty, resetOrder, getQty, total, itemCount } = useOrder();
   const { items, addMenuItem, removeMenuItem, updateMenuItem, resizeMenuItem, reorderMenuItems, resetMenu } = useMenu();
@@ -107,11 +109,31 @@ export default function App() {
     </div>
   );
 
+  // Fullscreen toggle button
+  const fullscreenBtn = (
+    <button
+      onClick={toggleFullscreen}
+      title={isFullscreen ? 'Zmenšit' : 'Celá obrazovka'}
+      className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#F0F0F0] border border-[#E8E8E8] text-[#1A1A1A] active:bg-[#E0E0E0]"
+    >
+      {isFullscreen ? (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M5 1v4H1M9 1v4h4M5 13v-4H1M9 13v-4h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ) : (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )}
+    </button>
+  );
+
   // Controls group: view toggle + edit button — right side of top bar
   const topBarControls = (
     <div className="flex items-center gap-2 pr-3">
       {viewToggle}
       {editBtn}
+      {fullscreenBtn}
     </div>
   );
 
