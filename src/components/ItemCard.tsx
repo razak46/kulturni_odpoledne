@@ -4,15 +4,16 @@ interface Props {
   item: MenuItem;
   qty: number;
   onTap: () => void;
+  dimmed?: boolean;
 }
 
-export function ItemCard({ item, qty, onTap }: Props) {
+export function ItemCard({ item, qty, onTap, dimmed }: Props) {
   return (
     <button
       onClick={onTap}
-      className={`relative text-left w-full min-h-[72px] py-[14px] px-4 rounded-[10px] bg-white transition-all active:scale-95 ${
-        qty > 0 ? 'border-2 border-[#1A1A1A]' : 'border border-[#E8E8E8]'
-      }`}
+      className={`relative text-left w-full min-h-[72px] py-[14px] px-4 rounded-[10px] bg-white transition-all ${
+        dimmed ? 'opacity-60' : 'active:scale-95'
+      } ${qty > 0 && !dimmed ? 'border-2 border-[#1A1A1A]' : 'border border-[#E8E8E8]'}`}
     >
       {qty > 0 && (
         <span className="absolute top-2 right-2 bg-[#C8102E] text-white rounded-full min-w-[24px] h-6 flex items-center justify-center text-xs font-bold px-1">
