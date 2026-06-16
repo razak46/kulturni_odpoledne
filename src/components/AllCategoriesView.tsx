@@ -69,7 +69,7 @@ export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDelete
 
             {/* Items grid */}
             <div className="flex-1 min-w-0 p-3">
-              <div className={`grid gap-3 ${isBeer ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'}`}>
+              <div className={`grid gap-3 ${'grid-cols-2 md:grid-cols-3'}`}>
                 {categoryItems.map(item => (
                   <div
                     key={item.id}

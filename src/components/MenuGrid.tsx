@@ -51,7 +51,7 @@ export function MenuGrid({ activeTab, items, getQty, onAddItem, editMode, onDele
 
   return (
     <div className="p-3">
-      <div className={`grid gap-3 ${isBeerTab ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'}`}>
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-3">
         {categoryItems.map(item => (
           <div
             key={item.id}
