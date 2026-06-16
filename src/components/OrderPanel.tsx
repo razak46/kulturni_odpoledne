@@ -1,13 +1,10 @@
-import { useState } from 'react';
 import type { OrderItem } from '../types';
-import { ResetConfirm } from './ResetConfirm';
 
 interface Props {
   orderItems: OrderItem[];
   total: number;
   onAdjustQty: (id: string, delta: number) => void;
   onRemove: (id: string) => void;
-  onReset: () => void;
   onClose?: () => void;
   isSheet?: boolean;
 }
@@ -17,16 +14,9 @@ export function OrderPanel({
   total,
   onAdjustQty,
   onRemove,
-  onReset,
   onClose,
   isSheet = false,
 }: Props) {
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-
-  const handleReset = () => {
-    onReset();
-    setShowResetConfirm(false);
-  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -111,20 +101,6 @@ export function OrderPanel({
         <div className="text-[40px] font-extrabold text-[#1A1A1A] leading-tight">
           {total} Kč
         </div>
-
-        {showResetConfirm ? (
-          <ResetConfirm
-            onConfirm={handleReset}
-            onCancel={() => setShowResetConfirm(false)}
-          />
-        ) : (
-          <button
-            onClick={() => setShowResetConfirm(true)}
-            className="w-full h-11 mt-3 border-[1.5px] border-[#C8102E] bg-white text-[#C8102E] rounded-[10px] text-[14px] font-medium"
-          >
-            Resetovat objednávku
-          </button>
-        )}
       </div>
     </div>
   );

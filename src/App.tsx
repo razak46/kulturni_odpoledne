@@ -177,7 +177,6 @@ export default function App() {
             total={total}
             onAdjustQty={adjustQty}
             onRemove={removeItem}
-            onReset={resetOrder}
           />
         </div>
       </div>
@@ -230,7 +229,6 @@ export default function App() {
                 total={total}
                 onAdjustQty={adjustQty}
                 onRemove={removeItem}
-                onReset={() => { resetOrder(); setSheetOpen(false); }}
                 onClose={() => setSheetOpen(false)}
                 isSheet
               />
@@ -261,7 +259,7 @@ export default function App() {
         />
       )}
 
-      {/* Pay FAB — bottom-right, visible when order non-empty */}
+      {/* Dokončit FAB — always visible bottom-right */}
       <div className="hidden md:block">
         <PayButton total={total} itemCount={itemCount} onPay={resetOrder} bottomOffset="bottom-6" />
       </div>
