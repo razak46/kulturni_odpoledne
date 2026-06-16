@@ -1,9 +1,9 @@
 import type { MenuItem, CardSize } from '../types';
 
-const SIZE_STYLES: Record<CardSize, { minH: string; p: string; sizeFont: string }> = {
-  sm: { minH: 'min-h-[88px]',  p: 'p-3', sizeFont: 'text-[22px]' },
-  md: { minH: 'min-h-[130px]', p: 'p-4', sizeFont: 'text-[36px]' },
-  lg: { minH: 'min-h-[170px]', p: 'p-5', sizeFont: 'text-[52px]' },
+const SIZE_STYLES: Record<CardSize, { minH: string; py: string; nameFont: string }> = {
+  sm: { minH: 'min-h-[52px]',  py: 'py-2 px-3',      nameFont: 'text-[13px]' },
+  md: { minH: 'min-h-[72px]',  py: 'py-[14px] px-4', nameFont: 'text-[15px]' },
+  lg: { minH: 'min-h-[96px]',  py: 'py-5 px-4',      nameFont: 'text-[17px]' },
 };
 
 interface Props {
@@ -16,12 +16,13 @@ interface Props {
 
 export function BeerCard({ item, qty, onTap, dimmed, bgColor = '#FFFFFF' }: Props) {
   const s = SIZE_STYLES[item.cardSize ?? 'md'];
+  const label = item.size ? `${item.name} - ${item.size}` : item.name;
 
   return (
     <button
       onClick={onTap}
       style={{ backgroundColor: bgColor }}
-      className={`relative text-left w-full ${s.minH} ${s.p} rounded-xl transition-all ${
+      className={`relative text-left w-full ${s.minH} ${s.py} rounded-[10px] transition-all ${
         dimmed ? 'opacity-60' : 'active:scale-95'
       } ${qty > 0 && !dimmed ? 'border-2 border-[#1A1A1A]' : 'border border-[#E8E8E8]'}`}
     >
@@ -30,17 +31,12 @@ export function BeerCard({ item, qty, onTap, dimmed, bgColor = '#FFFFFF' }: Prop
           {qty}
         </span>
       )}
-      <div className="flex flex-col h-full justify-between">
-        <div>
-          <div className={`${s.sizeFont} font-extrabold text-[#1A1A1A] leading-tight`}>
-            {item.size}
-          </div>
-          <div className="text-base font-bold text-[#1A1A1A] mt-1">
-            {item.name}
-          </div>
+      <div className="pr-6">
+        <div className={`${s.nameFont} font-semibold text-[#1A1A1A] leading-tight`}>
+          {label}
         </div>
-        <div className="text-base font-bold text-[#1A1A1A] mt-3 text-right">
-          {item.price} Kč
+        <div className="flex justify-end items-center mt-1">
+          <span className="text-[13px] font-semibold text-[#1A1A1A]">{item.price} Kč</span>
         </div>
       </div>
     </button>
