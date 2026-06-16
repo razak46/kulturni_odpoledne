@@ -180,7 +180,7 @@ export default function App() {
           {/* Top bar: logo + tabs + controls */}
           <div className="bg-white border-b border-[#E8E8E8] shrink-0 flex items-center">
             <div className="pl-3 shrink-0">
-              <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} />
+              <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} editMode={editMode} />
             </div>
             <div className="flex-1 min-w-0">
               <TabBar
@@ -216,7 +216,7 @@ export default function App() {
         {/* Top bar */}
         <div className="bg-white border-b border-[#E8E8E8] shrink-0 flex items-center z-10">
           <div className="pl-3 shrink-0">
-            <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} />
+            <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} editMode={editMode} />
           </div>
           <div className="flex-1 min-w-0">
             <TabBar
