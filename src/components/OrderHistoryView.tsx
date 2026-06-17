@@ -5,6 +5,9 @@ interface Props {
   records: OrderRecord[];
   onClose: () => void;
   onAddManual: () => void;
+  onRefresh: () => void;
+  refreshing: boolean;
+  lastRefreshed: Date | null;
 }
 
 function fmtDate(ts: number): string {
@@ -14,7 +17,7 @@ function fmtDate(ts: number): string {
   });
 }
 
-export function OrderHistoryView({ records, onClose, onAddManual }: Props) {
+export function OrderHistoryView({ records, onClose, onAddManual, onRefresh, refreshing, lastRefreshed }: Props) {
   const [sortAsc, setSortAsc] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -59,6 +62,21 @@ export function OrderHistoryView({ records, onClose, onAddManual }: Props) {
           className="text-[12px] bg-[#F0F0F0] border border-[#E8E8E8] rounded-lg px-3 py-1.5 font-medium text-[#1A1A1A] whitespace-nowrap"
         >
           + Manuální
+        </button>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={refreshing}
+          title="Obnovit seznam"
+          className="w-8 h-8 flex items-center justify-center border border-[#E8E8E8] rounded-lg bg-[#F0F0F0] text-[#1A1A1A] disabled:opacity-40"
+        >
+          <svg
+            width="14" height="14" viewBox="0 0 14 14" fill="none"
+            className={refreshing ? 'animate-spin' : ''}
+          >
+            <path d="M12.5 7A5.5 5.5 0 1 1 7 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M7 1.5L9.5 4M7 1.5L9.5 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </button>
         <button
           type="button"
@@ -141,9 +159,16 @@ export function OrderHistoryView({ records, onClose, onAddManual }: Props) {
       </div>
 
       {/* Footer */}
-      <div className="border-t border-[#E8E8E8] px-4 py-3 shrink-0 bg-[#FAFAFA] flex items-center justify-between">
-        <span className="text-[12px] text-[#9B9B9B]">{filtered.length} objednávek</span>
-        <span className="text-[14px] font-bold text-[#1A1A1A]">Celkem: {filteredTotal} Kč</span>
+      <div className="border-t border-[#E8E8E8] px-4 py-3 shrink-0 bg-[#FAFAFA]">
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] text-[#9B9B9B]">{filtered.length} objednávek</span>
+          <span className="text-[14px] font-bold text-[#1A1A1A]">Celkem: {filteredTotal} Kč</span>
+        </div>
+        {lastRefreshed && (
+          <p className="text-[11px] text-[#C0C0C0] mt-0.5">
+            {refreshing ? 'Aktualizuji…' : `Aktualizováno: ${lastRefreshed.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`}
+          </p>
+        )}
       </div>
 
     </div>

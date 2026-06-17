@@ -47,7 +47,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
   }, []);
 
   const { logoUrl, uploadLogo, removeLogo } = useLogo();
-  const { records, addRecord } = useOrderHistory();
+  const { records, addRecord, refresh: refreshOrders, refreshing: ordersRefreshing, lastRefreshed: ordersLastRefreshed } = useOrderHistory();
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
   const { zoomIn, zoomOut, canZoomIn, canZoomOut } = useFontScale();
 
@@ -384,6 +384,9 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
           records={records}
           onClose={() => setShowHistory(false)}
           onAddManual={() => setShowManual(true)}
+          onRefresh={refreshOrders}
+          refreshing={ordersRefreshing}
+          lastRefreshed={ordersLastRefreshed}
         />
       )}
 

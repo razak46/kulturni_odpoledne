@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { OrderLineItem, OrderRecord } from '../types';
 
 function todayKey(): string {
@@ -20,15 +20,32 @@ function generateId(): string {
   return `${todayKey()}-${String(nextDailyCounter()).padStart(4, '0')}`;
 }
 
+const POLL_INTERVAL_MS = 30_000;
+
 export function useOrderHistory() {
   const [records, setRecords] = useState<OrderRecord[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
-  useEffect(() => {
-    fetch('/api/orders', { credentials: 'include' })
-      .then(r => r.ok ? r.json() : [])
-      .then((data: OrderRecord[]) => setRecords(data))
-      .catch(() => { /* server unreachable — start with empty list */ });
+  const fetchRecords = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const r = await fetch('/api/orders', { credentials: 'include' });
+      if (r.ok) {
+        const data: OrderRecord[] = await r.json();
+        setRecords(data);
+        setLastRefreshed(new Date());
+      }
+    } catch { /* server unreachable */ }
+    finally { setRefreshing(false); }
   }, []);
+
+  // Initial load + auto-refresh every 30 s
+  useEffect(() => {
+    fetchRecords();
+    const id = setInterval(fetchRecords, POLL_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [fetchRecords]);
 
   const addRecord = async (items: OrderLineItem[], total: number, isManual: boolean, manualNote?: string) => {
     const record: OrderRecord = {
@@ -57,5 +74,5 @@ export function useOrderHistory() {
     }
   };
 
-  return { records, addRecord };
+  return { records, addRecord, refresh: fetchRecords, refreshing, lastRefreshed };
 }
