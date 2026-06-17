@@ -6,6 +6,8 @@ import { useLogo } from './hooks/useLogo';
 import { useFullscreen } from './hooks/useFullscreen';
 import { useFontScale } from './hooks/useFontScale';
 import { useOrderHistory } from './hooks/useOrderHistory';
+import { useAuth } from './hooks/useAuth';
+import { LoginScreen } from './components/LoginScreen';
 import { TabBar } from './components/TabBar';
 import { MenuGrid } from './components/MenuGrid';
 import { AllCategoriesView } from './components/AllCategoriesView';
@@ -19,6 +21,18 @@ import { ManualOrderModal } from './components/ManualOrderModal';
 type ViewMode = 'tabs' | 'all';
 
 export default function App() {
+  const { user, loading: authLoading, login, logout } = useAuth();
+
+  // Show a blank screen while the session check is in flight
+  if (authLoading) return <div className="min-h-screen bg-[#F8F8F8]" />;
+
+  // Gate the whole app behind authentication
+  if (!user) return <LoginScreen onLogin={login} />;
+
+  return <PosApp onLogout={logout} />;
+}
+
+function PosApp({ onLogout }: { onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState<Category>('piva');
   const [visibleSection, setVisibleSection] = useState<Category>('piva');
   const [viewMode, setViewMode] = useState<ViewMode>('tabs');
@@ -168,6 +182,20 @@ export default function App() {
     </button>
   );
 
+  const logoutBtn = (
+    <button
+      type="button"
+      onClick={onLogout}
+      title="Odhlásit se"
+      className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#F0F0F0] border border-[#E8E8E8] text-[#9B9B9B] active:bg-[#E0E0E0]"
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M5 2H2a1 1 0 00-1 1v8a1 1 0 001 1h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <path d="M9.5 4.5L12 7l-2.5 2.5M12 7H5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </button>
+  );
+
   // Controls group: view toggle + edit button — right side of top bar
   const topBarControls = (
     <div className="flex items-center gap-2 pr-3">
@@ -175,6 +203,7 @@ export default function App() {
       {editBtn}
       {historyBtn}
       {fullscreenBtn}
+      {logoutBtn}
     </div>
   );
 

@@ -1,7 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { OrderLineItem, OrderRecord } from '../types';
-
-const HISTORY_KEY = 'pos_order_history';
 
 function todayKey(): string {
   const d = new Date();
@@ -11,33 +9,52 @@ function todayKey(): string {
   return `${dd}${mm}${yy}`;
 }
 
-function nextCounter(dayKey: string): number {
-  const key = `pos_order_counter_${dayKey}`;
+function nextDailyCounter(): number {
+  const key = `pos_order_counter_${todayKey()}`;
   const n = Number(localStorage.getItem(key) ?? 0) + 1;
   localStorage.setItem(key, String(n));
   return n;
 }
 
 function generateId(): string {
-  const day = todayKey();
-  return `${day}-${String(nextCounter(day)).padStart(4, '0')}`;
-}
-
-function load(): OrderRecord[] {
-  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]'); }
-  catch { return []; }
+  return `${todayKey()}-${String(nextDailyCounter()).padStart(4, '0')}`;
 }
 
 export function useOrderHistory() {
-  const [records, setRecords] = useState<OrderRecord[]>(load);
+  const [records, setRecords] = useState<OrderRecord[]>([]);
 
-  const addRecord = (items: OrderLineItem[], total: number, isManual: boolean, manualNote?: string) => {
-    const record: OrderRecord = { id: generateId(), timestamp: Date.now(), items, total, isManual, manualNote };
-    setRecords(prev => {
-      const updated = [record, ...prev];
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
-      return updated;
-    });
+  useEffect(() => {
+    fetch('/api/orders', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : [])
+      .then((data: OrderRecord[]) => setRecords(data))
+      .catch(() => { /* server unreachable — start with empty list */ });
+  }, []);
+
+  const addRecord = async (items: OrderLineItem[], total: number, isManual: boolean, manualNote?: string) => {
+    const record: OrderRecord = {
+      id: generateId(),
+      timestamp: Date.now(),
+      items,
+      total,
+      isManual,
+      manualNote,
+    };
+
+    // Optimistic update — show immediately in UI
+    setRecords(prev => [record, ...prev]);
+
+    // Persist to backend
+    try {
+      const r = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(record),
+      });
+      if (!r.ok) console.error('Order save failed:', await r.text());
+    } catch (e) {
+      console.error('Order save error:', e);
+    }
   };
 
   return { records, addRecord };
