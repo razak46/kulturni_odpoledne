@@ -61,14 +61,23 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_orders_ts ON orders (timestamp);
 `);
 
-// Bootstrap admin user on first run
-const userCount = db.prepare('SELECT COUNT(*) AS n FROM users').get().n;
-if (userCount === 0) {
-  const uname = process.env.ADMIN_USER ?? 'admin';
-  const rawPw = process.env.ADMIN_PASSWORD ?? 'admin';
+// Bootstrap admin user.
+// • First run (no users): create from env vars or defaults (admin/admin).
+// • Subsequent runs: if ADMIN_PASSWORD env var is explicitly set, update the
+//   stored hash so the password stays in sync with the env var.
+const uname = process.env.ADMIN_USER ?? 'admin';
+const rawPw = process.env.ADMIN_PASSWORD ?? 'admin';
+
+const existingUser = db.prepare('SELECT id FROM users WHERE username = ?').get(uname);
+if (!existingUser) {
   const hash = bcrypt.hashSync(rawPw, 12);
   db.prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)').run(uname, hash);
   console.log(`✅  Admin user "${uname}" created.`);
+} else if (process.env.ADMIN_PASSWORD) {
+  // Env var explicitly set → keep hash in sync
+  const hash = bcrypt.hashSync(rawPw, 12);
+  db.prepare('UPDATE users SET password_hash = ? WHERE username = ?').run(hash, uname);
+  console.log(`🔄  Password for "${uname}" updated from ADMIN_PASSWORD env var.`);
 }
 
 // ── Express ───────────────────────────────────────────────────────────────────
