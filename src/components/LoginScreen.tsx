@@ -12,9 +12,14 @@ export function LoginScreen({ onLogin }: Props) {
   return (
     <div className="min-h-screen bg-[#F8F8F8] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl px-8 py-10 w-full max-w-sm shadow-lg">
-        <h1 className="text-[22px] font-bold text-[#1A1A1A] mb-1 text-center">Kulturní odpoledne</h1>
+        <div className="flex justify-center mb-5">
+          <img src="/kasirka-logo.webp" alt="Kasírka" className="w-48 h-auto" />
+        </div>
+        {mode === 'change-password' && (
+          <p className="text-[14px] font-semibold text-[#1A1A1A] text-center mb-1">Změna hesla</p>
+        )}
         <p className="text-[13px] text-[#9B9B9B] text-center mb-8">
-          {mode === 'login' ? 'Přihlaste se pro přístup k aplikaci' : 'Změna hesla'}
+          {mode === 'login' ? 'Přihlaste se pro přístup k aplikaci' : 'Zadejte aktuální a nové heslo'}
         </p>
 
         {mode === 'login'
