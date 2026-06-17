@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
-import type { OrderLineItem, OrderRecord } from '../types';
+import type { MenuItem, OrderLineItem, OrderRecord } from '../types';
 import { EditOrderModal } from './EditOrderModal';
 
 interface Props {
   records: OrderRecord[];
+  menuItems: MenuItem[];
   onClose: () => void;
   onAddManual: () => void;
   onRefresh: () => void;
@@ -20,7 +21,7 @@ function fmtDate(ts: number): string {
   });
 }
 
-export function OrderHistoryView({ records, onClose, onAddManual, onRefresh, onDelete, onUpdate, refreshing, lastRefreshed }: Props) {
+export function OrderHistoryView({ records, menuItems, onClose, onAddManual, onRefresh, onDelete, onUpdate, refreshing, lastRefreshed }: Props) {
   const [sortAsc, setSortAsc] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -193,6 +194,7 @@ export function OrderHistoryView({ records, onClose, onAddManual, onRefresh, onD
       {editingOrder && (
         <EditOrderModal
           order={editingOrder}
+          menuItems={menuItems}
           onSave={onUpdate}
           onClose={() => setEditingOrder(null)}
         />

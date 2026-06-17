@@ -382,6 +382,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
       {showHistory && (
         <OrderHistoryView
           records={records}
+          menuItems={items}
           onClose={() => setShowHistory(false)}
           onAddManual={() => setShowManual(true)}
           onRefresh={refreshOrders}
