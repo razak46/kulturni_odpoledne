@@ -16,7 +16,18 @@ export interface OrderItem {
   quantity: number;
 }
 
-export interface OrderItem {
-  menuItem: MenuItem;
-  quantity: number;
+export interface OrderLineItem {
+  name: string;
+  size?: string;
+  price: number;
+  qty: number;
+}
+
+export interface OrderRecord {
+  id: string;
+  timestamp: number;
+  items: OrderLineItem[];
+  total: number;
+  isManual: boolean;
+  manualNote?: string;
 }

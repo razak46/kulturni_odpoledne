@@ -5,6 +5,7 @@ import { useMenu } from './hooks/useMenu';
 import { useLogo } from './hooks/useLogo';
 import { useFullscreen } from './hooks/useFullscreen';
 import { useFontScale } from './hooks/useFontScale';
+import { useOrderHistory } from './hooks/useOrderHistory';
 import { TabBar } from './components/TabBar';
 import { MenuGrid } from './components/MenuGrid';
 import { AllCategoriesView } from './components/AllCategoriesView';
@@ -12,6 +13,8 @@ import { OrderPanel } from './components/OrderPanel';
 import { AddItemModal } from './components/AddItemModal';
 import { PayButton } from './components/PayButton';
 import { LogoSlot } from './components/LogoSlot';
+import { OrderHistoryView } from './components/OrderHistoryView';
+import { ManualOrderModal } from './components/ManualOrderModal';
 
 type ViewMode = 'tabs' | 'all';
 
@@ -23,11 +26,14 @@ export default function App() {
   const [editMode, setEditMode] = useState(false);
   const [addFormCategory, setAddFormCategory] = useState<Category | null>(null);
   const [showResetMenuConfirm, setShowResetMenuConfirm] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showManual, setShowManual] = useState(false);
   const scrollToSection = useCallback((cat: Category) => {
     document.getElementById(`section-${cat}`)?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
   const { logoUrl, uploadLogo, removeLogo } = useLogo();
+  const { records, addRecord } = useOrderHistory();
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
   const { zoomIn, zoomOut, canZoomIn, canZoomOut } = useFontScale();
 
@@ -38,6 +44,21 @@ export default function App() {
   const editingItem = editingItemId ? items.find(i => i.id === editingItemId) ?? null : null;
 
   const handleAddItem = (item: MenuItem, afterId: string) => addMenuItem(item, afterId);
+
+  const handleDokoncit = (closeSheet = false) => {
+    addRecord(
+      orderItems.map(oi => ({ name: oi.menuItem.name, size: oi.menuItem.size, price: oi.menuItem.price, qty: oi.quantity })),
+      total,
+      false,
+    );
+    resetOrder();
+    if (closeSheet) setSheetOpen(false);
+  };
+
+  const handleManualOrder = (amount: number, note: string) => {
+    addRecord([], amount, true, note || undefined);
+    setShowManual(false);
+  };
 
   const handleResetMenu = () => {
     resetMenu();
@@ -130,11 +151,29 @@ export default function App() {
     </button>
   );
 
+  // History icon button
+  const historyBtn = (
+    <button
+      type="button"
+      onClick={() => setShowHistory(true)}
+      title="Evidence objednávek"
+      className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#F0F0F0] border border-[#E8E8E8] text-[#1A1A1A] active:bg-[#E0E0E0]"
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <rect x="1.5" y="1.5" width="11" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+        <line x1="4" y1="5" x2="10" y2="5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+        <line x1="4" y1="7.5" x2="10" y2="7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+        <line x1="4" y1="10" x2="7.5" y2="10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+      </svg>
+    </button>
+  );
+
   // Controls group: view toggle + edit button — right side of top bar
   const topBarControls = (
     <div className="flex items-center gap-2 pr-3">
       {viewToggle}
       {editBtn}
+      {historyBtn}
       {fullscreenBtn}
     </div>
   );
@@ -293,16 +332,28 @@ export default function App() {
 
       {/* Dokončit FAB — always visible bottom-right */}
       <div className="hidden md:block">
-        <PayButton total={total} itemCount={itemCount} onPay={resetOrder} bottomRem={1.5} />
+        <PayButton total={total} itemCount={itemCount} onPay={() => handleDokoncit()} bottomRem={1.5} />
       </div>
       <div className="md:hidden">
-        <PayButton
-          total={total}
-          itemCount={itemCount}
-          onPay={() => { resetOrder(); setSheetOpen(false); }}
-          bottomRem={5}
-        />
+        <PayButton total={total} itemCount={itemCount} onPay={() => handleDokoncit(true)} bottomRem={5} />
       </div>
+
+      {/* Order history overlay */}
+      {showHistory && (
+        <OrderHistoryView
+          records={records}
+          onClose={() => setShowHistory(false)}
+          onAddManual={() => setShowManual(true)}
+        />
+      )}
+
+      {/* Manual order modal */}
+      {showManual && (
+        <ManualOrderModal
+          onSave={handleManualOrder}
+          onClose={() => setShowManual(false)}
+        />
+      )}
     </div>
   );
 }
