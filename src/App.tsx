@@ -241,8 +241,8 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
   return (
     <div className="min-h-screen bg-[#F8F8F8] font-sans">
 
-      {/* ── Desktop two-column layout ── */}
-      <div className="hidden md:flex h-screen overflow-hidden">
+      {/* ── Desktop two-column layout (lg = 1024px, iPad landscape and larger) ── */}
+      <div className="hidden lg:flex h-screen overflow-hidden">
         {/* Left column */}
         <div className="flex-1 flex flex-col overflow-hidden" style={{ flexBasis: '65%' }}>
           {/* Top bar: logo + tabs + controls */}
@@ -280,8 +280,8 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
         </div>
       </div>
 
-      {/* ── Mobile single-column layout ── */}
-      <div className="md:hidden fixed inset-0 flex flex-col overflow-hidden" style={{ paddingBottom: 64 }}>
+      {/* ── Mobile/tablet single-column layout (up to lg = 1024px, portrait iPad and phones) ── */}
+      <div className="lg:hidden fixed inset-0 flex flex-col overflow-hidden" style={{ paddingBottom: 64 }}>
         {/* Top bar */}
         <div className="bg-white border-b border-[#E8E8E8] shrink-0 flex items-center z-10">
           <div className="pl-3 shrink-0">
@@ -301,8 +301,8 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
         </div>
       </div>
 
-      {/* Mobile sticky bottom bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-[#E8E8E8] flex items-center justify-between px-4 z-20">
+      {/* Mobile/tablet sticky bottom bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-[#E8E8E8] flex items-center justify-between px-4 z-20">
         <span className="text-[18px] font-bold text-[#1A1A1A]">Celkem: {total} Kč</span>
         <div className="flex items-center gap-2">
           <button
@@ -321,9 +321,9 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
         </div>
       </div>
 
-      {/* Mobile bottom sheet */}
+      {/* Mobile/tablet bottom sheet */}
       {sheetOpen && (
-        <div className="md:hidden fixed inset-0 z-30">
+        <div className="lg:hidden fixed inset-0 z-30">
           <div className="absolute inset-0 bg-black/40" onClick={() => setSheetOpen(false)} />
           <div
             className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl overflow-hidden"
@@ -370,11 +370,11 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
         />
       )}
 
-      {/* Dokončit FAB — always visible bottom-right */}
-      <div className="hidden md:block">
+      {/* Zaplatit FAB — always visible bottom-right */}
+      <div className="hidden lg:block">
         <PayButton total={total} itemCount={itemCount} onPay={() => handleDokoncit()} bottomRem={1.5} />
       </div>
-      <div className="md:hidden">
+      <div className="lg:hidden">
         <PayButton total={total} itemCount={itemCount} onPay={() => handleDokoncit(true)} bottomRem={5} />
       </div>
 

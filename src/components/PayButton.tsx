@@ -4,7 +4,7 @@ interface Props {
   total: number;
   itemCount: number;
   onPay: () => void;
-  bottomRem?: number; // base bottom offset in rem
+  bottomRem?: number;
 }
 
 export function PayButton({ total, itemCount, onPay, bottomRem = 1.5 }: Props) {
@@ -35,9 +35,9 @@ export function PayButton({ total, itemCount, onPay, bottomRem = 1.5 }: Props) {
   if (done) {
     return (
       <div style={posStyle}>
-        <div className="bg-[#1A1A1A] text-white rounded-2xl px-5 py-3 text-[14px] font-semibold shadow-lg flex items-center gap-2">
+        <div className="bg-[#22C55E] text-[#1A1A1A] rounded-2xl px-5 py-3 text-[15px] font-bold shadow-lg flex items-center gap-2">
           <span className="text-[18px]">✓</span>
-          <span>Hotovo!</span>
+          <span>Zaplaceno!</span>
         </div>
       </div>
     );
@@ -48,18 +48,18 @@ export function PayButton({ total, itemCount, onPay, bottomRem = 1.5 }: Props) {
       <div style={posStyle}>
         <div className="bg-white border border-[#E8E8E8] rounded-2xl px-4 py-3 shadow-lg min-w-[220px]">
           <p className="text-[13px] text-[#1A1A1A] font-medium mb-1">
-            Dokončit objednávku {total} Kč?
+            Zaplatit {total} Kč?
           </p>
           <div className="flex gap-2 mt-2">
             <button
               onClick={handleConfirm}
-              className="flex-1 bg-[#1A1A1A] text-white rounded-xl py-2 text-[13px] font-semibold"
+              className="flex-1 bg-[#22C55E] text-[#1A1A1A] rounded-xl py-2.5 text-[13px] font-bold"
             >
-              Dokončit
+              Potvrdit
             </button>
             <button
               onClick={() => setConfirm(false)}
-              className="flex-1 border border-[#E8E8E8] text-[#6B6B6B] rounded-xl py-2 text-[13px]"
+              className="flex-1 border border-[#E8E8E8] text-[#6B6B6B] rounded-xl py-2.5 text-[13px]"
             >
               Zpět
             </button>
@@ -73,13 +73,13 @@ export function PayButton({ total, itemCount, onPay, bottomRem = 1.5 }: Props) {
     <div style={posStyle}>
       <button
         onClick={handleClick}
-        className={`rounded-2xl px-5 py-3 text-[14px] font-semibold shadow-lg transition-all whitespace-nowrap ${
+        className={`rounded-2xl px-6 py-3.5 text-[15px] font-bold shadow-lg transition-all whitespace-nowrap ${
           itemCount > 0
-            ? 'bg-[#1A1A1A] text-white active:scale-95'
+            ? 'bg-[#22C55E] text-[#1A1A1A] active:scale-95'
             : 'bg-[#E8E8E8] text-[#9B9B9B] cursor-default'
         }`}
       >
-        Dokončit a Zadat další
+        Zaplatit
       </button>
     </div>
   );
