@@ -165,6 +165,27 @@ app.post('/api/auth/change-password', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+// Change password from the login screen (no active session needed —
+// current credentials are verified before accepting the new password)
+app.post('/api/auth/change-password-unauthenticated', authLimiter, (req, res) => {
+  const { username, currentPassword, newPassword } = req.body ?? {};
+  if (
+    typeof username !== 'string' || !username ||
+    typeof currentPassword !== 'string' || !currentPassword ||
+    typeof newPassword !== 'string' || newPassword.length < 8
+  ) {
+    return res.status(400).json({ error: 'Nové heslo musí mít alespoň 8 znaků' });
+  }
+  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username.trim());
+  const hash = user?.password_hash ?? '$2a$12$invalidhashplaceholderXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+  if (!user || !bcrypt.compareSync(currentPassword, hash)) {
+    return res.status(401).json({ error: 'Nesprávné přihlašovací údaje' });
+  }
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+    .run(bcrypt.hashSync(newPassword, 12), user.id);
+  res.json({ ok: true });
+});
+
 // ── Order routes ──────────────────────────────────────────────────────────────
 app.get('/api/orders', requireAuth, (_req, res) => {
   const rows = db.prepare('SELECT * FROM orders ORDER BY timestamp DESC').all();
