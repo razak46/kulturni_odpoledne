@@ -10,8 +10,8 @@ export function LoginScreen({ onLogin }: Props) {
   const [mode, setMode] = useState<Mode>('login');
 
   return (
-    <div className="min-h-screen bg-[#F8F8F8] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl px-8 py-10 w-full max-w-sm shadow-lg">
+    <div className="min-h-screen bg-gradient-to-br from-[#111111] via-[#1E1C18] to-[#111111] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl px-8 py-10 w-full max-w-sm shadow-2xl">
         <div className="flex justify-center mb-5">
           <img src="/kasirka-logo.webp" alt="Kasírka" className="w-48 h-auto" />
         </div>

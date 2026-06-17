@@ -16,22 +16,24 @@ interface Props {
 
 export function TabBar({ activeTab, onChange, rightSlot }: Props) {
   return (
-    <div className="flex items-stretch">
-      {TABS.map(tab => (
-        <button
-          key={tab.id}
-          onClick={() => onChange(tab.id)}
-          className={`flex-1 py-3 text-sm transition-colors ${
-            activeTab === tab.id
-              ? 'font-bold text-[#1A1A1A] border-b-2 border-[#C8102E]'
-              : 'font-normal text-[#9B9B9B]'
-          }`}
-        >
-          {tab.label}
-        </button>
-      ))}
+    <div className="flex items-center h-12">
+      <div className="flex items-center gap-0.5 px-2 h-full">
+        {TABS.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => onChange(tab.id)}
+            className={`h-8 px-3.5 rounded-full text-[13px] font-semibold transition-all ${
+              activeTab === tab.id
+                ? 'bg-[#1A1A1A] text-white'
+                : 'text-[#9B9B9B] hover:text-[#1A1A1A]'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
       {rightSlot && (
-        <div className="flex items-center px-3 shrink-0">
+        <div className="flex items-center px-3 ml-auto shrink-0">
           {rightSlot}
         </div>
       )}

@@ -239,14 +239,14 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
   );
 
   return (
-    <div className="min-h-screen bg-[#F8F8F8] font-sans">
+    <div className="min-h-screen bg-[#EFEDE9] font-sans">
 
       {/* ── Desktop two-column layout (lg = 1024px, iPad landscape and larger) ── */}
       <div className="hidden lg:flex h-screen overflow-hidden">
         {/* Left column */}
         <div className="flex-1 flex flex-col overflow-hidden" style={{ flexBasis: '65%' }}>
           {/* Top bar: logo + tabs + controls */}
-          <div className="bg-white border-b border-[#E8E8E8] shrink-0 flex items-center">
+          <div className="bg-white border-b border-[#EBEBEB] shadow-sm shrink-0 flex items-center">
             <div className="pl-3 shrink-0">
               <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} editMode={editMode} />
             </div>
@@ -265,7 +265,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
         </div>
 
         {/* Right column */}
-        <div className="bg-white border-l border-[#E8E8E8] flex flex-col overflow-hidden" style={{ flexBasis: '35%' }}>
+        <div className="bg-white border-l border-[#EBEBEB] flex flex-col overflow-hidden" style={{ flexBasis: '35%' }}>
           <OrderPanel
             orderItems={orderItems}
             total={total}
@@ -283,7 +283,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
       {/* ── Mobile/tablet single-column layout (up to lg = 1024px, portrait iPad and phones) ── */}
       <div className="lg:hidden fixed inset-0 flex flex-col overflow-hidden" style={{ paddingBottom: 64 }}>
         {/* Top bar */}
-        <div className="bg-white border-b border-[#E8E8E8] shrink-0 flex items-center z-10">
+        <div className="bg-white border-b border-[#EBEBEB] shadow-sm shrink-0 flex items-center z-10">
           <div className="pl-3 shrink-0">
             <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} editMode={editMode} />
           </div>
@@ -302,21 +302,24 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
       </div>
 
       {/* Mobile/tablet sticky bottom bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-[#E8E8E8] flex items-center justify-between px-4 z-20">
-        <span className="text-[18px] font-bold text-[#1A1A1A]">Celkem: {total} Kč</span>
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#1A1A1A] border-t border-[#2A2A2A] flex items-center justify-between px-4 z-20">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.12em] text-[#666] font-semibold leading-none mb-0.5">Celkem</div>
+          <span className="text-[20px] font-extrabold text-white tabular-nums">{total} Kč</span>
+        </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setShowManual(true)}
-            className="border border-[#E8E8E8] text-[#9B9B9B] rounded-[10px] px-[14px] py-[10px] text-[13px] font-medium"
+            className="border border-[#333] text-[#888] rounded-xl px-3.5 py-2 text-[13px] font-medium hover:border-[#555] transition-colors"
           >
             + Manuální
           </button>
           <button
             onClick={() => setSheetOpen(true)}
-            className="bg-[#1A1A1A] text-white rounded-[10px] px-[18px] py-[10px] text-[14px] font-medium"
+            className="bg-white text-[#1A1A1A] rounded-xl px-4 py-2 text-[14px] font-semibold active:scale-95 transition-transform"
           >
-            Zobrazit objednávku
+            Objednávka
           </button>
         </div>
       </div>
