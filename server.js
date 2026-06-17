@@ -246,6 +246,33 @@ app.post('/api/orders', requireAuth, async (req, res, next) => {
   }
 });
 
+app.patch('/api/orders/:id', requireAuth, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { total, manualNote } = req.body ?? {};
+    if (typeof total !== 'number' || total < 0) {
+      return res.status(400).json({ error: 'Neplatná částka' });
+    }
+    const [row] = await sql`
+      UPDATE orders
+      SET total = ${Number(total)}, manual_note = ${manualNote ? String(manualNote) : null}
+      WHERE order_id = ${id}
+      RETURNING id
+    `;
+    if (!row) return res.status(404).json({ error: 'Objednávka nenalezena' });
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+app.delete('/api/orders/:id', requireAuth, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const [row] = await sql`DELETE FROM orders WHERE order_id = ${id} RETURNING id`;
+    if (!row) return res.status(404).json({ error: 'Objednávka nenalezena' });
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
 // ── Error handler ─────────────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {
   console.error(err);

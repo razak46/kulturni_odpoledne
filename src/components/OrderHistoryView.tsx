@@ -6,6 +6,8 @@ interface Props {
   onClose: () => void;
   onAddManual: () => void;
   onRefresh: () => void;
+  onDelete: (id: string) => void;
+  onUpdate: (id: string, total: number, manualNote?: string) => void;
   refreshing: boolean;
   lastRefreshed: Date | null;
 }
@@ -17,11 +19,17 @@ function fmtDate(ts: number): string {
   });
 }
 
-export function OrderHistoryView({ records, onClose, onAddManual, onRefresh, refreshing, lastRefreshed }: Props) {
+export function OrderHistoryView({ records, onClose, onAddManual, onRefresh, onDelete, onUpdate, refreshing, lastRefreshed }: Props) {
   const [sortAsc, setSortAsc] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [itemSearch, setItemSearch] = useState('');
+
+  // Per-row state
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTotal, setEditTotal] = useState('');
+  const [editNote, setEditNote] = useState('');
 
   const filtered = useMemo(() => {
     const fromTs = dateFrom ? new Date(dateFrom).getTime() : null;
@@ -47,6 +55,22 @@ export function OrderHistoryView({ records, onClose, onAddManual, onRefresh, ref
   const filteredTotal = filtered.reduce((s, r) => s + r.total, 0);
   const hasFilters = dateFrom || dateTo || itemSearch;
 
+  const startEdit = (r: OrderRecord) => {
+    setConfirmDeleteId(null);
+    setEditingId(r.id);
+    setEditTotal(String(r.total));
+    setEditNote(r.manualNote ?? '');
+  };
+
+  const cancelEdit = () => setEditingId(null);
+
+  const saveEdit = (id: string) => {
+    const total = Number(editTotal);
+    if (isNaN(total) || total < 0) return;
+    onUpdate(id, total, editNote.trim() || undefined);
+    setEditingId(null);
+  };
+
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
 
@@ -70,10 +94,7 @@ export function OrderHistoryView({ records, onClose, onAddManual, onRefresh, ref
           title="Obnovit seznam"
           className="w-8 h-8 flex items-center justify-center border border-[#E8E8E8] rounded-lg bg-[#F0F0F0] text-[#1A1A1A] disabled:opacity-40"
         >
-          <svg
-            width="14" height="14" viewBox="0 0 14 14" fill="none"
-            className={refreshing ? 'animate-spin' : ''}
-          >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className={refreshing ? 'animate-spin' : ''}>
             <path d="M12.5 7A5.5 5.5 0 1 1 7 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             <path d="M7 1.5L9.5 4M7 1.5L9.5 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
@@ -93,36 +114,23 @@ export function OrderHistoryView({ records, onClose, onAddManual, onRefresh, ref
         <div className="flex gap-2">
           <div className="flex flex-col gap-0.5 flex-1 min-w-0">
             <label className="text-[10px] uppercase tracking-wide text-[#9B9B9B]">Od</label>
-            <input
-              type="datetime-local"
-              value={dateFrom}
-              onChange={e => setDateFrom(e.target.value)}
-              className="border border-[#E8E8E8] rounded-lg px-2 py-1.5 text-[13px] bg-white w-full"
-            />
+            <input type="datetime-local" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+              className="border border-[#E8E8E8] rounded-lg px-2 py-1.5 text-[13px] bg-white w-full" />
           </div>
           <div className="flex flex-col gap-0.5 flex-1 min-w-0">
             <label className="text-[10px] uppercase tracking-wide text-[#9B9B9B]">Do</label>
-            <input
-              type="datetime-local"
-              value={dateTo}
-              onChange={e => setDateTo(e.target.value)}
-              className="border border-[#E8E8E8] rounded-lg px-2 py-1.5 text-[13px] bg-white w-full"
-            />
+            <input type="datetime-local" value={dateTo} onChange={e => setDateTo(e.target.value)}
+              className="border border-[#E8E8E8] rounded-lg px-2 py-1.5 text-[13px] bg-white w-full" />
           </div>
         </div>
         <input
-          type="text"
-          value={itemSearch}
-          onChange={e => setItemSearch(e.target.value)}
+          type="text" value={itemSearch} onChange={e => setItemSearch(e.target.value)}
           placeholder="Hledat položku (např. Plzeň - 0,5l)…"
           className="w-full border border-[#E8E8E8] rounded-lg px-3 py-1.5 text-[13px] bg-white"
         />
         {hasFilters && (
-          <button
-            type="button"
-            onClick={() => { setDateFrom(''); setDateTo(''); setItemSearch(''); }}
-            className="text-[12px] text-[#C8102E] underline"
-          >
+          <button type="button" onClick={() => { setDateFrom(''); setDateTo(''); setItemSearch(''); }}
+            className="text-[12px] text-[#C8102E] underline">
             Smazat filtry
           </button>
         )}
@@ -136,24 +144,103 @@ export function OrderHistoryView({ records, onClose, onAddManual, onRefresh, ref
           </div>
         ) : filtered.map(r => (
           <div key={r.id} className="border-b border-[#F0F0F0] px-4 py-3">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
-                <span className="font-mono text-[12px] font-semibold text-[#1A1A1A]">{r.id}</span>
-                {r.isManual && (
-                  <span className="text-[10px] bg-[#FFF8E1] border border-[#F5E596] text-[#7A6000] px-1.5 py-0.5 rounded font-semibold tracking-wide">
-                    ✎ manuální
-                  </span>
-                )}
-                <span className="text-[12px] text-[#9B9B9B]">{fmtDate(r.timestamp)}</span>
+
+            {/* ── Edit mode ── */}
+            {editingId === r.id ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-[12px] text-[#9B9B9B]">
+                  <span className="font-mono font-semibold text-[#1A1A1A]">{r.id}</span>
+                  <span>{fmtDate(r.timestamp)}</span>
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex flex-col gap-0.5">
+                    <label className="text-[10px] uppercase tracking-wide text-[#9B9B9B]">Částka (Kč)</label>
+                    <input
+                      type="number" min="0" value={editTotal}
+                      onChange={e => setEditTotal(e.target.value)}
+                      className="border border-[#E8E8E8] rounded-lg px-3 py-2 text-[15px] font-bold w-28 focus:outline-none focus:border-[#1A1A1A]"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                    <label className="text-[10px] uppercase tracking-wide text-[#9B9B9B]">Poznámka</label>
+                    <input
+                      type="text" value={editNote} onChange={e => setEditNote(e.target.value)}
+                      placeholder="Volitelná poznámka"
+                      className="border border-[#E8E8E8] rounded-lg px-3 py-2 text-[13px] w-full focus:outline-none focus:border-[#1A1A1A]"
+                      onKeyDown={e => { if (e.key === 'Enter') saveEdit(r.id); if (e.key === 'Escape') cancelEdit(); }}
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => saveEdit(r.id)}
+                    className="bg-[#1A1A1A] text-white rounded-lg px-4 py-1.5 text-[13px] font-semibold">
+                    Uložit
+                  </button>
+                  <button onClick={cancelEdit}
+                    className="border border-[#E8E8E8] text-[#6B6B6B] rounded-lg px-4 py-1.5 text-[13px]">
+                    Zrušit
+                  </button>
+                </div>
               </div>
-              <span className="text-[15px] font-bold text-[#1A1A1A] shrink-0">{r.total} Kč</span>
-            </div>
-            <div className="mt-0.5 text-[12px] text-[#6B6B6B] leading-relaxed">
-              {r.isManual
-                ? (r.manualNote || '—')
-                : r.items.map(i => `${i.name}${i.size ? ` — ${i.size}` : ''} ×${i.qty}`).join(', ')
-              }
-            </div>
+            ) : confirmDeleteId === r.id ? (
+              /* ── Confirm delete ── */
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[13px] text-[#C8102E] font-medium">Smazat objednávku {r.id}?</span>
+                <div className="flex gap-2 shrink-0">
+                  <button onClick={() => { onDelete(r.id); setConfirmDeleteId(null); }}
+                    className="bg-[#C8102E] text-white rounded-lg px-3 py-1.5 text-[12px] font-semibold">
+                    Smazat
+                  </button>
+                  <button onClick={() => setConfirmDeleteId(null)}
+                    className="border border-[#E8E8E8] text-[#6B6B6B] rounded-lg px-3 py-1.5 text-[12px]">
+                    Zpět
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* ── Normal row ── */
+              <div>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center flex-wrap gap-x-2 gap-y-1 min-w-0">
+                    <span className="font-mono text-[12px] font-semibold text-[#1A1A1A]">{r.id}</span>
+                    {r.isManual && (
+                      <span className="text-[10px] bg-[#FFF8E1] border border-[#F5E596] text-[#7A6000] px-1.5 py-0.5 rounded font-semibold tracking-wide">
+                        ✎ manuální
+                      </span>
+                    )}
+                    <span className="text-[12px] text-[#9B9B9B]">{fmtDate(r.timestamp)}</span>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="text-[15px] font-bold text-[#1A1A1A] mr-1">{r.total} Kč</span>
+                    <button
+                      type="button" onClick={() => startEdit(r)}
+                      title="Upravit"
+                      className="w-7 h-7 flex items-center justify-center rounded-md text-[#9B9B9B] hover:text-[#1A1A1A] hover:bg-[#F0F0F0] transition-colors"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <path d="M9 2L11 4L4.5 10.5H2.5V8.5L9 2Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                    <button
+                      type="button" onClick={() => { setEditingId(null); setConfirmDeleteId(r.id); }}
+                      title="Smazat"
+                      className="w-7 h-7 flex items-center justify-center rounded-md text-[#9B9B9B] hover:text-[#C8102E] hover:bg-[#FFF0F0] transition-colors"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                        <path d="M2 3.5h9M5 3.5V2.5h3v1M5.5 6v4M7.5 6v4M3 3.5l.5 7h6l.5-7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-0.5 text-[12px] text-[#6B6B6B] leading-relaxed">
+                  {r.isManual
+                    ? (r.manualNote || '—')
+                    : r.items.map(i => `${i.name}${i.size ? ` — ${i.size}` : ''} ×${i.qty}`).join(', ')
+                  }
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>

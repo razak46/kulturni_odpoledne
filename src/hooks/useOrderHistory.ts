@@ -74,5 +74,26 @@ export function useOrderHistory() {
     }
   };
 
-  return { records, addRecord, refresh: fetchRecords, refreshing, lastRefreshed };
+  const deleteRecord = async (id: string) => {
+    setRecords(prev => prev.filter(r => r.id !== id));
+    try {
+      const r = await fetch(`/api/orders/${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'include' });
+      if (!r.ok) { console.error('Delete failed:', await r.text()); fetchRecords(); }
+    } catch { fetchRecords(); }
+  };
+
+  const updateRecord = async (id: string, total: number, manualNote?: string) => {
+    setRecords(prev => prev.map(r => r.id === id ? { ...r, total, manualNote } : r));
+    try {
+      const r = await fetch(`/api/orders/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ total, manualNote }),
+      });
+      if (!r.ok) { console.error('Update failed:', await r.text()); fetchRecords(); }
+    } catch { fetchRecords(); }
+  };
+
+  return { records, addRecord, deleteRecord, updateRecord, refresh: fetchRecords, refreshing, lastRefreshed };
 }
