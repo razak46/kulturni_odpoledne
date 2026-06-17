@@ -249,13 +249,16 @@ app.post('/api/orders', requireAuth, async (req, res, next) => {
 app.patch('/api/orders/:id', requireAuth, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { total, manualNote } = req.body ?? {};
+    const { total, manualNote, items } = req.body ?? {};
     if (typeof total !== 'number' || total < 0) {
       return res.status(400).json({ error: 'Neplatná částka' });
     }
     const [row] = await sql`
       UPDATE orders
-      SET total = ${Number(total)}, manual_note = ${manualNote ? String(manualNote) : null}
+      SET
+        total      = ${Number(total)},
+        manual_note = ${manualNote ? String(manualNote) : null},
+        items      = ${JSON.stringify(Array.isArray(items) ? items : [])}
       WHERE order_id = ${id}
       RETURNING id
     `;

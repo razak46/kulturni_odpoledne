@@ -82,14 +82,14 @@ export function useOrderHistory() {
     } catch { fetchRecords(); }
   };
 
-  const updateRecord = async (id: string, total: number, manualNote?: string) => {
-    setRecords(prev => prev.map(r => r.id === id ? { ...r, total, manualNote } : r));
+  const updateRecord = async (id: string, total: number, items: OrderLineItem[], manualNote?: string) => {
+    setRecords(prev => prev.map(r => r.id === id ? { ...r, total, items, manualNote } : r));
     try {
       const r = await fetch(`/api/orders/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ total, manualNote }),
+        body: JSON.stringify({ total, items, manualNote }),
       });
       if (!r.ok) { console.error('Update failed:', await r.text()); fetchRecords(); }
     } catch { fetchRecords(); }

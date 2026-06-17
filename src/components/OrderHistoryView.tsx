@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import type { OrderRecord } from '../types';
+import type { OrderLineItem, OrderRecord } from '../types';
+import { EditOrderModal } from './EditOrderModal';
 
 interface Props {
   records: OrderRecord[];
@@ -7,7 +8,7 @@ interface Props {
   onAddManual: () => void;
   onRefresh: () => void;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, total: number, manualNote?: string) => void;
+  onUpdate: (id: string, total: number, items: OrderLineItem[], manualNote?: string) => void;
   refreshing: boolean;
   lastRefreshed: Date | null;
 }
@@ -25,11 +26,8 @@ export function OrderHistoryView({ records, onClose, onAddManual, onRefresh, onD
   const [dateTo, setDateTo] = useState('');
   const [itemSearch, setItemSearch] = useState('');
 
-  // Per-row state
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTotal, setEditTotal] = useState('');
-  const [editNote, setEditNote] = useState('');
+  const [editingOrder, setEditingOrder] = useState<OrderRecord | null>(null);
 
   const filtered = useMemo(() => {
     const fromTs = dateFrom ? new Date(dateFrom).getTime() : null;
@@ -54,22 +52,6 @@ export function OrderHistoryView({ records, onClose, onAddManual, onRefresh, onD
 
   const filteredTotal = filtered.reduce((s, r) => s + r.total, 0);
   const hasFilters = dateFrom || dateTo || itemSearch;
-
-  const startEdit = (r: OrderRecord) => {
-    setConfirmDeleteId(null);
-    setEditingId(r.id);
-    setEditTotal(String(r.total));
-    setEditNote(r.manualNote ?? '');
-  };
-
-  const cancelEdit = () => setEditingId(null);
-
-  const saveEdit = (id: string) => {
-    const total = Number(editTotal);
-    if (isNaN(total) || total < 0) return;
-    onUpdate(id, total, editNote.trim() || undefined);
-    setEditingId(null);
-  };
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
@@ -145,45 +127,7 @@ export function OrderHistoryView({ records, onClose, onAddManual, onRefresh, onD
         ) : filtered.map(r => (
           <div key={r.id} className="border-b border-[#F0F0F0] px-4 py-3">
 
-            {/* ── Edit mode ── */}
-            {editingId === r.id ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-[12px] text-[#9B9B9B]">
-                  <span className="font-mono font-semibold text-[#1A1A1A]">{r.id}</span>
-                  <span>{fmtDate(r.timestamp)}</span>
-                </div>
-                <div className="flex gap-2">
-                  <div className="flex flex-col gap-0.5">
-                    <label className="text-[10px] uppercase tracking-wide text-[#9B9B9B]">Částka (Kč)</label>
-                    <input
-                      type="number" min="0" value={editTotal}
-                      onChange={e => setEditTotal(e.target.value)}
-                      className="border border-[#E8E8E8] rounded-lg px-3 py-2 text-[15px] font-bold w-28 focus:outline-none focus:border-[#1A1A1A]"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                    <label className="text-[10px] uppercase tracking-wide text-[#9B9B9B]">Poznámka</label>
-                    <input
-                      type="text" value={editNote} onChange={e => setEditNote(e.target.value)}
-                      placeholder="Volitelná poznámka"
-                      className="border border-[#E8E8E8] rounded-lg px-3 py-2 text-[13px] w-full focus:outline-none focus:border-[#1A1A1A]"
-                      onKeyDown={e => { if (e.key === 'Enter') saveEdit(r.id); if (e.key === 'Escape') cancelEdit(); }}
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => saveEdit(r.id)}
-                    className="bg-[#1A1A1A] text-white rounded-lg px-4 py-1.5 text-[13px] font-semibold">
-                    Uložit
-                  </button>
-                  <button onClick={cancelEdit}
-                    className="border border-[#E8E8E8] text-[#6B6B6B] rounded-lg px-4 py-1.5 text-[13px]">
-                    Zrušit
-                  </button>
-                </div>
-              </div>
-            ) : confirmDeleteId === r.id ? (
+            {confirmDeleteId === r.id ? (
               /* ── Confirm delete ── */
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[13px] text-[#C8102E] font-medium">Smazat objednávku {r.id}?</span>
@@ -214,7 +158,7 @@ export function OrderHistoryView({ records, onClose, onAddManual, onRefresh, onD
                   <div className="flex items-center gap-1 shrink-0">
                     <span className="text-[15px] font-bold text-[#1A1A1A] mr-1">{r.total} Kč</span>
                     <button
-                      type="button" onClick={() => startEdit(r)}
+                      type="button" onClick={() => { setConfirmDeleteId(null); setEditingOrder(r); }}
                       title="Upravit"
                       className="w-7 h-7 flex items-center justify-center rounded-md text-[#9B9B9B] hover:text-[#1A1A1A] hover:bg-[#F0F0F0] transition-colors"
                     >
@@ -223,7 +167,7 @@ export function OrderHistoryView({ records, onClose, onAddManual, onRefresh, onD
                       </svg>
                     </button>
                     <button
-                      type="button" onClick={() => { setEditingId(null); setConfirmDeleteId(r.id); }}
+                      type="button" onClick={() => { setEditingOrder(null); setConfirmDeleteId(r.id); }}
                       title="Smazat"
                       className="w-7 h-7 flex items-center justify-center rounded-md text-[#9B9B9B] hover:text-[#C8102E] hover:bg-[#FFF0F0] transition-colors"
                     >
@@ -244,6 +188,15 @@ export function OrderHistoryView({ records, onClose, onAddManual, onRefresh, onD
           </div>
         ))}
       </div>
+
+      {/* Edit modal */}
+      {editingOrder && (
+        <EditOrderModal
+          order={editingOrder}
+          onSave={onUpdate}
+          onClose={() => setEditingOrder(null)}
+        />
+      )}
 
       {/* Footer */}
       <div className="border-t border-[#E8E8E8] px-4 py-3 shrink-0 bg-[#FAFAFA]">
