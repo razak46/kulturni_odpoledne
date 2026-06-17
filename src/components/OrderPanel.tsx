@@ -11,6 +11,7 @@ interface Props {
   onZoomOut?: () => void;
   canZoomIn?: boolean;
   canZoomOut?: boolean;
+  onAddManual?: () => void;
 }
 
 export function OrderPanel({
@@ -24,6 +25,7 @@ export function OrderPanel({
   onZoomOut,
   canZoomIn = true,
   canZoomOut = true,
+  onAddManual,
 }: Props) {
 
   return (
@@ -124,13 +126,24 @@ export function OrderPanel({
       </div>
 
       {/* Fixed bottom */}
-      <div className="border-t border-[#E8E8E8] px-5 py-4 shrink-0">
-        <div className="text-[11px] uppercase tracking-[0.08em] text-[#9B9B9B] font-medium">
-          Celkem k zaplacení
+      <div className="border-t border-[#E8E8E8] px-5 py-4 shrink-0 space-y-3">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.08em] text-[#9B9B9B] font-medium">
+            Celkem k zaplacení
+          </div>
+          <div className="text-[40px] font-extrabold text-[#1A1A1A] leading-tight">
+            {total} Kč
+          </div>
         </div>
-        <div className="text-[40px] font-extrabold text-[#1A1A1A] leading-tight">
-          {total} Kč
-        </div>
+        {onAddManual && (
+          <button
+            type="button"
+            onClick={onAddManual}
+            className="w-full border border-[#E8E8E8] rounded-xl py-2.5 text-[13px] font-medium text-[#9B9B9B] hover:border-[#1A1A1A] hover:text-[#1A1A1A] transition-colors"
+          >
+            + Manuální objednávka
+          </button>
+        )}
       </div>
     </div>
   );

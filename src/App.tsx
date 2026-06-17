@@ -275,6 +275,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
             onZoomOut={zoomOut}
             canZoomIn={canZoomIn}
             canZoomOut={canZoomOut}
+            onAddManual={() => setShowManual(true)}
           />
         </div>
       </div>
@@ -303,12 +304,21 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
       {/* Mobile sticky bottom bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-[#E8E8E8] flex items-center justify-between px-4 z-20">
         <span className="text-[18px] font-bold text-[#1A1A1A]">Celkem: {total} Kč</span>
-        <button
-          onClick={() => setSheetOpen(true)}
-          className="bg-[#1A1A1A] text-white rounded-[10px] px-[18px] py-[10px] text-[14px] font-medium"
-        >
-          Zobrazit objednávku
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowManual(true)}
+            className="border border-[#E8E8E8] text-[#9B9B9B] rounded-[10px] px-[14px] py-[10px] text-[13px] font-medium"
+          >
+            + Manuální
+          </button>
+          <button
+            onClick={() => setSheetOpen(true)}
+            className="bg-[#1A1A1A] text-white rounded-[10px] px-[18px] py-[10px] text-[14px] font-medium"
+          >
+            Zobrazit objednávku
+          </button>
+        </div>
       </div>
 
       {/* Mobile bottom sheet */}
@@ -330,6 +340,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
                 onZoomOut={zoomOut}
                 canZoomIn={canZoomIn}
                 canZoomOut={canZoomOut}
+                onAddManual={() => { setSheetOpen(false); setShowManual(true); }}
                 isSheet
               />
             </div>
