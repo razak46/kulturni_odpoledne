@@ -231,7 +231,7 @@ app.post('/api/orders', requireAuth, (req, res) => {
 // ── Serve built frontend in production ────────────────────────────────────────
 if (IS_PROD && fs.existsSync(DIST_DIR)) {
   app.use(express.static(DIST_DIR, { index: false }));
-  app.get('*', (_req, res) => res.sendFile(path.join(DIST_DIR, 'index.html')));
+  app.use((_req, res) => res.sendFile(path.join(DIST_DIR, 'index.html')));
 }
 
 app.listen(PORT, () => {
