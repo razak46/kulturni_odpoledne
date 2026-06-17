@@ -65,11 +65,7 @@ db.exec(`
 const userCount = db.prepare('SELECT COUNT(*) AS n FROM users').get().n;
 if (userCount === 0) {
   const uname = process.env.ADMIN_USER ?? 'admin';
-  const rawPw = process.env.ADMIN_PASSWORD ?? (() => {
-    const p = crypto.randomBytes(10).toString('base64url');
-    console.log(`\n🔑  No ADMIN_PASSWORD set — generated password for "${uname}":\n\n    ${p}\n`);
-    return p;
-  })();
+  const rawPw = process.env.ADMIN_PASSWORD ?? 'admin';
   const hash = bcrypt.hashSync(rawPw, 12);
   db.prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)').run(uname, hash);
   console.log(`✅  Admin user "${uname}" created.`);
