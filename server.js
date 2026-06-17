@@ -1,6 +1,7 @@
 // Express backend — POS server
-// Serves the API in both dev and production.
+// Requires DATABASE_URL (Neon / any PostgreSQL connection string).
 // In production (NODE_ENV=production) also serves the built frontend from ./dist
+// On Vercel, only the Express app is exported — listening is skipped.
 
 import express from 'express';
 import helmet from 'helmet';
@@ -8,7 +9,7 @@ import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import Database from 'better-sqlite3';
+import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
@@ -19,8 +20,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // ── Configuration ────────────────────────────────────────────────────────────
 const PORT    = Number(process.env.PORT ?? 3001);
 const IS_PROD = process.env.NODE_ENV === 'production';
-const DATA_DIR = path.join(__dirname, 'data');
-const DB_FILE  = path.join(DATA_DIR, 'pos.db');
 const DIST_DIR = path.join(__dirname, 'dist');
 
 if (!process.env.JWT_SECRET && IS_PROD) {
@@ -32,63 +31,70 @@ if (!process.env.JWT_SECRET) {
   console.warn('⚠  JWT_SECRET not set — using a random secret. All sessions reset on restart. Set JWT_SECRET in production.');
 }
 
-// ── Database ─────────────────────────────────────────────────────────────────
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-
-const db = new Database(DB_FILE);
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id            INTEGER PRIMARY KEY,
-    username      TEXT    UNIQUE NOT NULL COLLATE NOCASE,
-    password_hash TEXT    NOT NULL,
-    created_at    TEXT    DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS orders (
-    id          INTEGER PRIMARY KEY,
-    order_id    TEXT    UNIQUE NOT NULL,
-    timestamp   INTEGER NOT NULL,
-    items       TEXT    NOT NULL DEFAULT '[]',
-    total       REAL    NOT NULL,
-    is_manual   INTEGER NOT NULL DEFAULT 0,
-    manual_note TEXT,
-    created_at  TEXT    DEFAULT (datetime('now'))
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_orders_ts ON orders (timestamp);
-`);
-
-// Bootstrap admin user.
-// • First run (no users): create from env vars or defaults (admin/admin).
-// • Subsequent runs: if ADMIN_PASSWORD env var is explicitly set, update the
-//   stored hash so the password stays in sync with the env var.
-const uname = process.env.ADMIN_USER ?? 'admin';
-const rawPw = process.env.ADMIN_PASSWORD ?? 'admin';
-
-const existingUser = db.prepare('SELECT id FROM users WHERE username = ?').get(uname);
-if (!existingUser) {
-  const hash = bcrypt.hashSync(rawPw, 12);
-  db.prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)').run(uname, hash);
-  console.log(`✅  Admin user "${uname}" created.`);
-} else if (process.env.ADMIN_PASSWORD) {
-  // Env var explicitly set → keep hash in sync
-  const hash = bcrypt.hashSync(rawPw, 12);
-  db.prepare('UPDATE users SET password_hash = ? WHERE username = ?').run(hash, uname);
-  console.log(`🔄  Password for "${uname}" updated from ADMIN_PASSWORD env var.`);
+if (!process.env.DATABASE_URL) {
+  console.error('FATAL: DATABASE_URL is required. Get a free database at https://neon.tech and set DATABASE_URL. See .env.example.');
+  process.exit(1);
 }
+
+// ── Database ─────────────────────────────────────────────────────────────────
+const sql = neon(process.env.DATABASE_URL);
+
+async function initDb() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id            SERIAL PRIMARY KEY,
+      username      TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      created_at    TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS orders (
+      id          SERIAL PRIMARY KEY,
+      order_id    TEXT UNIQUE NOT NULL,
+      timestamp   BIGINT NOT NULL,
+      items       TEXT NOT NULL DEFAULT '[]',
+      total       REAL NOT NULL,
+      is_manual   BOOLEAN NOT NULL DEFAULT FALSE,
+      manual_note TEXT,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_orders_ts ON orders (timestamp)`;
+
+  // Bootstrap admin user.
+  // • First run (no users): create from env vars or defaults (admin/admin).
+  // • Subsequent runs: if ADMIN_PASSWORD env var is explicitly set, update the
+  //   stored hash so the password stays in sync with the env var.
+  const uname = process.env.ADMIN_USER     ?? 'admin';
+  const rawPw = process.env.ADMIN_PASSWORD ?? 'admin';
+  const [existing] = await sql`SELECT id FROM users WHERE LOWER(username) = LOWER(${uname})`;
+  if (!existing) {
+    const hash = await bcrypt.hash(rawPw, 12);
+    await sql`INSERT INTO users (username, password_hash) VALUES (${uname}, ${hash})`;
+    console.log(`✅  Admin user "${uname}" created.`);
+  } else if (process.env.ADMIN_PASSWORD) {
+    const hash = await bcrypt.hash(rawPw, 12);
+    await sql`UPDATE users SET password_hash = ${hash} WHERE LOWER(username) = LOWER(${uname})`;
+    console.log(`🔄  Password for "${uname}" updated from ADMIN_PASSWORD env var.`);
+  }
+}
+
+// Run once per process / cold start; all request handlers await this promise.
+const dbReady = initDb();
 
 // ── Express ───────────────────────────────────────────────────────────────────
 const app = express();
 
-app.use(helmet({
-  // In dev the CSP would block Vite HMR; Express only serves API in dev anyway
-  contentSecurityPolicy: IS_PROD,
-}));
+app.use(helmet({ contentSecurityPolicy: IS_PROD }));
 app.use(express.json({ limit: '512kb' }));
 app.use(cookieParser());
+
+// Ensure DB is initialised before handling any request
+app.use(async (_req, _res, next) => {
+  try { await dbReady; next(); }
+  catch (err) { next(err); }
+});
 
 // Strict rate limit for auth endpoints: 10 attempts / 15 min / IP
 const authLimiter = rateLimit({
@@ -107,8 +113,8 @@ function signToken(userId) {
 function setAuthCookie(res, token) {
   res.cookie('pos_token', token, {
     httpOnly: true,
-    secure: IS_PROD,        // HTTPS-only in production
-    sameSite: 'strict',     // CSRF mitigation
+    secure: IS_PROD,
+    sameSite: 'strict',
     maxAge: 7 * 24 * 3600 * 1000,
     path: '/',
   });
@@ -127,113 +133,130 @@ function requireAuth(req, res, next) {
 }
 
 // ── Auth routes ───────────────────────────────────────────────────────────────
-app.post('/api/auth/login', authLimiter, (req, res) => {
-  const { username, password } = req.body ?? {};
-  if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
-    return res.status(400).json({ error: 'Chybí uživatelské jméno nebo heslo' });
-  }
-
-  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username.trim());
-  // Use constant-time comparison to prevent timing attacks
-  const hash = user?.password_hash ?? '$2a$12$invalidhashplaceholderXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
-  const ok   = bcrypt.compareSync(password, hash);
-  if (!user || !ok) {
-    return res.status(401).json({ error: 'Nesprávné přihlašovací údaje' });
-  }
-
-  setAuthCookie(res, signToken(user.id));
-  res.json({ ok: true, username: user.username });
+app.post('/api/auth/login', authLimiter, async (req, res, next) => {
+  try {
+    const { username, password } = req.body ?? {};
+    if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
+      return res.status(400).json({ error: 'Chybí uživatelské jméno nebo heslo' });
+    }
+    const [user] = await sql`SELECT * FROM users WHERE LOWER(username) = LOWER(${username.trim()})`;
+    // Use constant-time comparison to prevent timing attacks
+    const hash = user?.password_hash ?? '$2a$12$invalidhashplaceholderXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+    const ok   = await bcrypt.compare(password, hash);
+    if (!user || !ok) return res.status(401).json({ error: 'Nesprávné přihlašovací údaje' });
+    setAuthCookie(res, signToken(user.id));
+    res.json({ ok: true, username: user.username });
+  } catch (err) { next(err); }
 });
 
-app.post('/api/auth/logout', (req, res) => {
+app.post('/api/auth/logout', (_req, res) => {
   res.clearCookie('pos_token', { path: '/' });
   res.json({ ok: true });
 });
 
-app.get('/api/auth/me', requireAuth, (req, res) => {
-  const user = db.prepare('SELECT id, username FROM users WHERE id = ?').get(req.user.sub);
-  if (!user) { res.clearCookie('pos_token'); return res.status(401).json({ error: 'Uživatel nenalezen' }); }
-  res.json({ id: user.id, username: user.username });
+app.get('/api/auth/me', requireAuth, async (req, res, next) => {
+  try {
+    const [user] = await sql`SELECT id, username FROM users WHERE id = ${req.user.sub}`;
+    if (!user) { res.clearCookie('pos_token'); return res.status(401).json({ error: 'Uživatel nenalezen' }); }
+    res.json({ id: user.id, username: user.username });
+  } catch (err) { next(err); }
 });
 
-app.post('/api/auth/change-password', requireAuth, (req, res) => {
-  const { currentPassword, newPassword } = req.body ?? {};
-  if (typeof newPassword !== 'string' || newPassword.length < 8) {
-    return res.status(400).json({ error: 'Nové heslo musí mít alespoň 8 znaků' });
-  }
-  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.sub);
-  if (!bcrypt.compareSync(currentPassword ?? '', user.password_hash)) {
-    return res.status(401).json({ error: 'Nesprávné aktuální heslo' });
-  }
-  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?')
-    .run(bcrypt.hashSync(newPassword, 12), user.id);
-  res.json({ ok: true });
+app.post('/api/auth/change-password', requireAuth, async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body ?? {};
+    if (typeof newPassword !== 'string' || newPassword.length < 8) {
+      return res.status(400).json({ error: 'Nové heslo musí mít alespoň 8 znaků' });
+    }
+    const [user] = await sql`SELECT * FROM users WHERE id = ${req.user.sub}`;
+    if (!await bcrypt.compare(currentPassword ?? '', user.password_hash)) {
+      return res.status(401).json({ error: 'Nesprávné aktuální heslo' });
+    }
+    await sql`UPDATE users SET password_hash = ${await bcrypt.hash(newPassword, 12)} WHERE id = ${user.id}`;
+    res.json({ ok: true });
+  } catch (err) { next(err); }
 });
 
 // Change password from the login screen (no active session needed —
 // current credentials are verified before accepting the new password)
-app.post('/api/auth/change-password-unauthenticated', authLimiter, (req, res) => {
-  const { username, currentPassword, newPassword } = req.body ?? {};
-  if (
-    typeof username !== 'string' || !username ||
-    typeof currentPassword !== 'string' || !currentPassword ||
-    typeof newPassword !== 'string' || newPassword.length < 8
-  ) {
-    return res.status(400).json({ error: 'Nové heslo musí mít alespoň 8 znaků' });
-  }
-  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username.trim());
-  const hash = user?.password_hash ?? '$2a$12$invalidhashplaceholderXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
-  if (!user || !bcrypt.compareSync(currentPassword, hash)) {
-    return res.status(401).json({ error: 'Nesprávné přihlašovací údaje' });
-  }
-  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?')
-    .run(bcrypt.hashSync(newPassword, 12), user.id);
-  res.json({ ok: true });
+app.post('/api/auth/change-password-unauthenticated', authLimiter, async (req, res, next) => {
+  try {
+    const { username, currentPassword, newPassword } = req.body ?? {};
+    if (
+      typeof username !== 'string' || !username ||
+      typeof currentPassword !== 'string' || !currentPassword ||
+      typeof newPassword !== 'string' || newPassword.length < 8
+    ) {
+      return res.status(400).json({ error: 'Nové heslo musí mít alespoň 8 znaků' });
+    }
+    const [user] = await sql`SELECT * FROM users WHERE LOWER(username) = LOWER(${username.trim()})`;
+    const hash = user?.password_hash ?? '$2a$12$invalidhashplaceholderXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+    if (!user || !await bcrypt.compare(currentPassword, hash)) {
+      return res.status(401).json({ error: 'Nesprávné přihlašovací údaje' });
+    }
+    await sql`UPDATE users SET password_hash = ${await bcrypt.hash(newPassword, 12)} WHERE id = ${user.id}`;
+    res.json({ ok: true });
+  } catch (err) { next(err); }
 });
 
 // ── Order routes ──────────────────────────────────────────────────────────────
-app.get('/api/orders', requireAuth, (_req, res) => {
-  const rows = db.prepare('SELECT * FROM orders ORDER BY timestamp DESC').all();
-  res.json(rows.map(r => ({
-    id:         r.order_id,
-    timestamp:  r.timestamp,
-    items:      JSON.parse(r.items),
-    total:      r.total,
-    isManual:   r.is_manual === 1,
-    manualNote: r.manual_note ?? undefined,
-  })));
+app.get('/api/orders', requireAuth, async (_req, res, next) => {
+  try {
+    const rows = await sql`SELECT * FROM orders ORDER BY timestamp DESC`;
+    res.json(rows.map(r => ({
+      id:         r.order_id,
+      timestamp:  Number(r.timestamp),
+      items:      JSON.parse(r.items),
+      total:      r.total,
+      isManual:   r.is_manual === true,
+      manualNote: r.manual_note ?? undefined,
+    })));
+  } catch (err) { next(err); }
 });
 
-app.post('/api/orders', requireAuth, (req, res) => {
-  const { id, timestamp, items, total, isManual, manualNote } = req.body ?? {};
-  if (!id || !timestamp || total == null) {
-    return res.status(400).json({ error: 'Chybí povinná pole (id, timestamp, total)' });
-  }
+app.post('/api/orders', requireAuth, async (req, res, next) => {
   try {
-    db.prepare(
-      'INSERT INTO orders (order_id, timestamp, items, total, is_manual, manual_note) VALUES (?, ?, ?, ?, ?, ?)'
-    ).run(
-      String(id), Number(timestamp),
-      JSON.stringify(Array.isArray(items) ? items : []),
-      Number(total),
-      isManual ? 1 : 0,
-      manualNote ? String(manualNote) : null,
-    );
+    const { id, timestamp, items, total, isManual, manualNote } = req.body ?? {};
+    if (!id || !timestamp || total == null) {
+      return res.status(400).json({ error: 'Chybí povinná pole (id, timestamp, total)' });
+    }
+    await sql`
+      INSERT INTO orders (order_id, timestamp, items, total, is_manual, manual_note)
+      VALUES (
+        ${String(id)},
+        ${Number(timestamp)},
+        ${JSON.stringify(Array.isArray(items) ? items : [])},
+        ${Number(total)},
+        ${isManual ? true : false},
+        ${manualNote ? String(manualNote) : null}
+      )
+    `;
     res.status(201).json({ ok: true });
-  } catch (e) {
-    if (e.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+  } catch (err) {
+    if (err.code === '23505') { // PostgreSQL unique violation
       return res.status(409).json({ error: 'Objednávka s tímto ID již existuje' });
     }
-    throw e;
+    next(err);
   }
 });
 
-// ── Serve built frontend in production ────────────────────────────────────────
-if (IS_PROD && fs.existsSync(DIST_DIR)) {
+// ── Error handler ─────────────────────────────────────────────────────────────
+app.use((err, _req, res, _next) => {
+  console.error(err);
+  res.status(500).json({ error: 'Interní chyba serveru' });
+});
+
+// ── Serve built frontend in production (local node only, not Vercel) ──────────
+if (IS_PROD && !process.env.VERCEL && fs.existsSync(DIST_DIR)) {
   app.use(express.static(DIST_DIR, { index: false }));
   app.use((_req, res) => res.sendFile(path.join(DIST_DIR, 'index.html')));
 }
 
-app.listen(PORT, () => {
-  console.log(`POS server → http://localhost:${PORT}  [${IS_PROD ? 'production' : 'development'}]`);
-});
+// ── Start server (skipped on Vercel — Vercel imports the app directly) ────────
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`POS server → http://localhost:${PORT}  [${IS_PROD ? 'production' : 'development'}]`);
+  });
+}
+
+export default app;
