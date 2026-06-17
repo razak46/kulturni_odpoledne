@@ -68,15 +68,21 @@ async function initDb() {
   //   stored hash so the password stays in sync with the env var.
   const uname = process.env.ADMIN_USER     ?? 'admin';
   const rawPw = process.env.ADMIN_PASSWORD ?? 'admin';
-  const [existing] = await sql`SELECT id FROM users WHERE LOWER(username) = LOWER(${uname})`;
-  if (!existing) {
-    const hash = await bcrypt.hash(rawPw, 12);
-    await sql`INSERT INTO users (username, password_hash) VALUES (${uname}, ${hash})`;
-    console.log(`✅  Admin user "${uname}" created.`);
-  } else if (process.env.ADMIN_PASSWORD) {
-    const hash = await bcrypt.hash(rawPw, 12);
-    await sql`UPDATE users SET password_hash = ${hash} WHERE LOWER(username) = LOWER(${uname})`;
-    console.log(`🔄  Password for "${uname}" updated from ADMIN_PASSWORD env var.`);
+  const hash  = await bcrypt.hash(rawPw, 12);
+  if (process.env.ADMIN_PASSWORD) {
+    // Env var explicitly set → create or overwrite (atomic upsert)
+    await sql`
+      INSERT INTO users (username, password_hash) VALUES (${uname}, ${hash})
+      ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash
+    `;
+    console.log(`✅  Admin user "${uname}" created or updated from ADMIN_PASSWORD env var.`);
+  } else {
+    // Default credentials → create only if not exists (atomic, no race condition)
+    await sql`
+      INSERT INTO users (username, password_hash) VALUES (${uname}, ${hash})
+      ON CONFLICT (username) DO NOTHING
+    `;
+    console.log(`✅  Admin user "${uname}" ensured.`);
   }
 }
 
