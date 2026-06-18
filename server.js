@@ -61,6 +61,13 @@ async function initDb() {
     )
   `;
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_ts ON orders (timestamp)`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS settings (
+      key        TEXT PRIMARY KEY,
+      value      TEXT NOT NULL,
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
 
   // Bootstrap admin user.
   // • First run (no users): create from env vars or defaults (admin/admin).
@@ -272,6 +279,39 @@ app.delete('/api/orders/:id', requireAuth, async (req, res, next) => {
     const { id } = req.params;
     const [row] = await sql`DELETE FROM orders WHERE order_id = ${id} RETURNING id`;
     if (!row) return res.status(404).json({ error: 'Objednávka nenalezena' });
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+// ── Settings / Logo routes ────────────────────────────────────────────────────
+app.get('/api/settings/logo', requireAuth, async (_req, res, next) => {
+  try {
+    const [row] = await sql`SELECT value FROM settings WHERE key = 'logo'`;
+    if (!row) return res.status(404).json({ error: 'Žádné logo' });
+    res.json({ data: row.value });
+  } catch (err) { next(err); }
+});
+
+app.put('/api/settings/logo', requireAuth, async (req, res, next) => {
+  try {
+    const { data } = req.body ?? {};
+    if (typeof data !== 'string' || !data.startsWith('data:image/')) {
+      return res.status(400).json({ error: 'Neplatná data obrázku' });
+    }
+    if (data.length > 2_000_000) {
+      return res.status(413).json({ error: 'Logo je příliš velké (max ~1.5 MB)' });
+    }
+    await sql`
+      INSERT INTO settings (key, value, updated_at) VALUES ('logo', ${data}, NOW())
+      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+    `;
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+app.delete('/api/settings/logo', requireAuth, async (_req, res, next) => {
+  try {
+    await sql`DELETE FROM settings WHERE key = 'logo'`;
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
