@@ -17,6 +17,7 @@ import { PayButton } from './components/PayButton';
 import { LogoSlot } from './components/LogoSlot';
 import { OrderHistoryView } from './components/OrderHistoryView';
 import { ManualOrderModal } from './components/ManualOrderModal';
+import { Calculator } from './components/Calculator';
 
 type ViewMode = 'tabs' | 'all';
 
@@ -42,6 +43,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
   const [showResetMenuConfirm, setShowResetMenuConfirm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showManual, setShowManual] = useState(false);
+  const [showCalc, setShowCalc] = useState(false);
   const scrollToSection = useCallback((cat: Category) => {
     document.getElementById(`section-${cat}`)?.scrollIntoView({ behavior: 'smooth' });
   }, []);
@@ -165,6 +167,29 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
     </button>
   );
 
+  // Calculator button
+  const calcBtn = (
+    <button
+      type="button"
+      onClick={() => setShowCalc(true)}
+      title="Kalkulačka"
+      className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#F0F0F0] border border-[#E8E8E8] text-[#1A1A1A] active:bg-[#E0E0E0]"
+    >
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+        <rect x="1.5" y="1.5" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.4"/>
+        <rect x="3.5" y="3.5" width="2.5" height="1.8" rx="0.5" fill="currentColor"/>
+        <rect x="6.25" y="3.5" width="2.5" height="1.8" rx="0.5" fill="currentColor"/>
+        <rect x="9" y="3.5" width="2.5" height="1.8" rx="0.5" fill="currentColor"/>
+        <rect x="3.5" y="6.5" width="2.5" height="1.5" rx="0.5" fill="currentColor" opacity="0.6"/>
+        <rect x="6.25" y="6.5" width="2.5" height="1.5" rx="0.5" fill="currentColor" opacity="0.6"/>
+        <rect x="9" y="6.5" width="2.5" height="1.5" rx="0.5" fill="currentColor" opacity="0.6"/>
+        <rect x="3.5" y="9.2" width="2.5" height="1.5" rx="0.5" fill="currentColor" opacity="0.6"/>
+        <rect x="6.25" y="9.2" width="2.5" height="1.5" rx="0.5" fill="currentColor" opacity="0.6"/>
+        <rect x="9" y="9.2" width="2.5" height="1.5" rx="0.5" fill="currentColor"/>
+      </svg>
+    </button>
+  );
+
   // History icon button
   const historyBtn = (
     <button
@@ -201,6 +226,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
     <div className="flex items-center gap-2 pr-3">
       {viewToggle}
       {editBtn}
+      {calcBtn}
       {historyBtn}
       {fullscreenBtn}
       {logoutBtn}
@@ -403,6 +429,9 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
           onClose={() => setShowManual(false)}
         />
       )}
+
+      {/* Calculator */}
+      {showCalc && <Calculator onClose={() => setShowCalc(false)} />}
     </div>
   );
 }
