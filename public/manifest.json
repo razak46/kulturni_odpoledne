@@ -1,0 +1,24 @@
+{
+  "name": "Kasírka",
+  "short_name": "Kasírka",
+  "description": "Pokladní systém pro kulturní akce",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#863bff",
+  "theme_color": "#863bff",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
