@@ -76,10 +76,10 @@ export function PayButton({ total, itemCount, onPay, bottomRem = 1.5 }: Props) {
     <div style={posStyle}>
       <button
         onClick={handleClick}
-        className={`rounded-full py-3.5 text-[15px] font-bold shadow-lg transition-all whitespace-nowrap ${
+        className={`rounded-full py-[21px] text-[22px] font-bold shadow-lg transition-all whitespace-nowrap ${
           itemCount > 0
-            ? 'bg-[#22C55E] text-[#1A1A1A] active:scale-95 px-6'
-            : 'bg-[#E8E8E8] text-[#ADADAD] cursor-default px-6'
+            ? 'bg-[#22C55E] text-[#1A1A1A] active:scale-95 px-9'
+            : 'bg-[#E8E8E8] text-[#ADADAD] cursor-default px-9'
         }`}
       >
         {itemCount > 0 ? `Zaplatit ${total} Kč` : 'Zaplatit'}
