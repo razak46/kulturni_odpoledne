@@ -59,7 +59,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
   }, []);
 
   const { logoUrl, uploadLogo, removeLogo } = useLogo();
-  const { records, addRecord, deleteRecord, updateRecord, refresh: refreshOrders, refreshing: ordersRefreshing, lastRefreshed: ordersLastRefreshed } = useOrderHistory();
+  const { records, addRecord, deleteRecord, updateRecord, refresh: refreshOrders, refreshing: ordersRefreshing, lastRefreshed: ordersLastRefreshed, offlineQueueSize } = useOrderHistory();
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
   const { zoomIn, zoomOut, canZoomIn, canZoomOut } = useFontScale();
 
@@ -415,6 +415,19 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
           onUpdate={updateMenuItem}
           onClose={() => setEditingItemId(null)}
         />
+      )}
+
+      {/* Offline queue indicator */}
+      {offlineQueueSize > 0 && (
+        <div style={{ position: 'fixed', left: '1rem', bottom: 'max(1.5rem, calc(1.5rem + env(safe-area-inset-bottom, 0px)))', zIndex: 40 }}>
+          <div className="bg-[#F59E0B] text-white rounded-full px-4 py-2 text-[13px] font-semibold shadow-lg flex items-center gap-1.5">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M7 2v4l2.5 1.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+              <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5"/>
+            </svg>
+            {offlineQueueSize} {offlineQueueSize === 1 ? 'objednávka čeká na sync' : offlineQueueSize < 5 ? 'objednávky čekají na sync' : 'objednávek čeká na sync'}
+          </div>
+        </div>
       )}
 
       {/* Zaplatit FAB */}

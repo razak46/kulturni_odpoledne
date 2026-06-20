@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { OrderLineItem, OrderRecord } from '../types';
 
 function todayKey(): string {
@@ -21,15 +21,58 @@ function generateId(): string {
 }
 
 const POLL_INTERVAL_MS = 30_000;
+const QUEUE_KEY = 'pos_offline_queue_v1';
+
+function loadQueue(): OrderRecord[] {
+  try { return JSON.parse(localStorage.getItem(QUEUE_KEY) ?? '[]'); } catch { return []; }
+}
+
+function saveQueue(q: OrderRecord[]) {
+  localStorage.setItem(QUEUE_KEY, JSON.stringify(q));
+}
+
+async function postOrder(record: OrderRecord): Promise<boolean> {
+  try {
+    const r = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(record),
+    });
+    // 201 = created, 409 = already exists — both mean it's safely in the DB
+    return r.ok || r.status === 409;
+  } catch {
+    return false;
+  }
+}
 
 export function useOrderHistory() {
   const [records, setRecords] = useState<OrderRecord[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [offlineQueueSize, setOfflineQueueSize] = useState(() => loadQueue().length);
+  const isFlushing = useRef(false);
+
+  const flushQueue = useCallback(async () => {
+    if (isFlushing.current) return;
+    const queue = loadQueue();
+    if (queue.length === 0) return;
+    isFlushing.current = true;
+    const remaining: OrderRecord[] = [];
+    for (const record of queue) {
+      const ok = await postOrder(record);
+      if (!ok) remaining.push(record);
+    }
+    saveQueue(remaining);
+    setOfflineQueueSize(remaining.length);
+    isFlushing.current = false;
+  }, []);
 
   const fetchRecords = useCallback(async () => {
     setRefreshing(true);
     try {
+      // Flush offline queue before fetching so the returned list is up to date
+      await flushQueue();
       const r = await fetch('/api/orders', { credentials: 'include' });
       if (r.ok) {
         const data: OrderRecord[] = await r.json();
@@ -38,7 +81,7 @@ export function useOrderHistory() {
       }
     } catch { /* server unreachable */ }
     finally { setRefreshing(false); }
-  }, []);
+  }, [flushQueue]);
 
   // Initial load + auto-refresh every 30 s
   useEffect(() => {
@@ -46,6 +89,13 @@ export function useOrderHistory() {
     const id = setInterval(fetchRecords, POLL_INTERVAL_MS);
     return () => clearInterval(id);
   }, [fetchRecords]);
+
+  // Flush queue when device comes back online
+  useEffect(() => {
+    const handleOnline = () => flushQueue().then(() => fetchRecords());
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [flushQueue, fetchRecords]);
 
   const addRecord = async (items: OrderLineItem[], total: number, isManual: boolean, manualNote?: string) => {
     const record: OrderRecord = {
@@ -60,17 +110,13 @@ export function useOrderHistory() {
     // Optimistic update — show immediately in UI
     setRecords(prev => [record, ...prev]);
 
-    // Persist to backend
-    try {
-      const r = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(record),
-      });
-      if (!r.ok) console.error('Order save failed:', await r.text());
-    } catch (e) {
-      console.error('Order save error:', e);
+    const ok = await postOrder(record);
+    if (!ok) {
+      // Network down — queue for later sync
+      const queue = loadQueue();
+      queue.push(record);
+      saveQueue(queue);
+      setOfflineQueueSize(queue.length);
     }
   };
 
@@ -95,5 +141,5 @@ export function useOrderHistory() {
     } catch { fetchRecords(); }
   };
 
-  return { records, addRecord, deleteRecord, updateRecord, refresh: fetchRecords, refreshing, lastRefreshed };
+  return { records, addRecord, deleteRecord, updateRecord, refresh: fetchRecords, refreshing, lastRefreshed, offlineQueueSize };
 }
