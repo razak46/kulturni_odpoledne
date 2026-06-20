@@ -102,5 +102,24 @@ export function useMenu() {
     });
   }, []);
 
-  return { items, getCategoryItems, addMenuItem, removeMenuItem, updateMenuItem, resizeMenuItem, reorderMenuItems, resetMenu };
+  const addSpacer = useCallback((category: Category) => {
+    const spacer: MenuItem = {
+      id: `spacer_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      name: '',
+      price: 0,
+      category,
+      isSpacer: true,
+    };
+    setItems(prev => {
+      let lastIdx = -1;
+      prev.forEach((item, idx) => { if (item.category === category) lastIdx = idx; });
+      const next = lastIdx === -1
+        ? [...prev, spacer]
+        : [...prev.slice(0, lastIdx + 1), spacer, ...prev.slice(lastIdx + 1)];
+      persist(next);
+      return next;
+    });
+  }, []);
+
+  return { items, getCategoryItems, addMenuItem, removeMenuItem, updateMenuItem, resizeMenuItem, reorderMenuItems, resetMenu, addSpacer };
 }

@@ -9,6 +9,7 @@ export interface MenuItem {
   category: Category;
   isBeer?: boolean;
   cardSize?: CardSize;
+  isSpacer?: boolean;
 }
 
 export interface OrderItem {

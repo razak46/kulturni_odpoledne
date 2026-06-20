@@ -54,7 +54,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
   const { zoomIn, zoomOut, canZoomIn, canZoomOut } = useFontScale();
 
   const { orderItems, addItem, removeItem, adjustQty, resetOrder, getQty, total, itemCount } = useOrder();
-  const { items, addMenuItem, removeMenuItem, updateMenuItem, resizeMenuItem, reorderMenuItems, resetMenu } = useMenu();
+  const { items, addMenuItem, removeMenuItem, updateMenuItem, resizeMenuItem, reorderMenuItems, resetMenu, addSpacer } = useMenu();
 
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const editingItem = editingItemId ? items.find(i => i.id === editingItemId) ?? null : null;
@@ -245,6 +245,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
         onEditItem={setEditingItemId}
         onReorder={reorderMenuItems}
         onOpenAddForm={() => setAddFormCategory(activeTab)}
+        onAddSpacer={() => addSpacer(activeTab)}
       />
     ) : (
       <AllCategoriesView
@@ -257,6 +258,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
         onEditItem={setEditingItemId}
         onReorder={reorderMenuItems}
         onOpenAddForm={(cat) => setAddFormCategory(cat as Category)}
+        onAddSpacer={addSpacer}
         onVisibleSection={setVisibleSection}
       />
     )

@@ -15,11 +15,12 @@ interface Props {
   onEditItem: (id: string) => void;
   onReorder: (orderedIds: string[]) => void;
   onOpenAddForm: (category: string) => void;
+  onAddSpacer: (category: Category) => void;
   onVisibleSection?: (cat: Category) => void;
 }
 
-export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDeleteItem, onResizeItem, onEditItem, onReorder, onOpenAddForm, onVisibleSection }: Props) {
-  const dragId = useRef<string | null>(null);
+export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDeleteItem, onResizeItem, onEditItem, onReorder, onOpenAddForm, onAddSpacer, onVisibleSection }: Props) {
+  const activeDragId = useRef<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,24 +45,45 @@ export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDelete
     return () => obs.disconnect();
   }, [onVisibleSection]);
 
-  const handleDragStart = (id: string) => { dragId.current = id; };
-  const handleDragOver = (e: React.DragEvent, id: string) => { e.preventDefault(); setDragOverId(id); };
-  const handleDrop = (targetId: string, categoryItems: MenuItem[]) => {
-    if (!dragId.current || dragId.current === targetId) { setDragOverId(null); return; }
+  const makeReorder = (categoryItems: MenuItem[]) => (targetId: string) => {
+    if (!activeDragId.current || activeDragId.current === targetId) { setDragOverId(null); return; }
     const ids = categoryItems.map(i => i.id);
-    const from = ids.indexOf(dragId.current);
+    const from = ids.indexOf(activeDragId.current);
     const to = ids.indexOf(targetId);
     if (from === -1 || to === -1) { setDragOverId(null); return; }
     ids.splice(from, 1);
-    ids.splice(to, 0, dragId.current);
+    ids.splice(to, 0, activeDragId.current);
     const catSet = new Set(categoryItems.map(i => i.id));
     let ci = 0;
     const newOrder = items.map(i => i.id).map(id => catSet.has(id) ? ids[ci++] : id);
     onReorder(newOrder);
-    dragId.current = null;
+    activeDragId.current = null;
     setDragOverId(null);
   };
-  const handleDragEnd = () => { dragId.current = null; setDragOverId(null); };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!activeDragId.current) return;
+    const touch = e.touches[0];
+    const els = document.elementsFromPoint(touch.clientX, touch.clientY);
+    for (const el of els) {
+      const id = (el as HTMLElement).dataset?.dragId;
+      if (id && id !== activeDragId.current) { setDragOverId(id); return; }
+    }
+  };
+
+  const dragProps = (id: string, doReorder: (targetId: string) => void) => !editMode ? {} : {
+    draggable: true as const,
+    onDragStart: () => { activeDragId.current = id; },
+    onDragOver: (e: React.DragEvent) => { e.preventDefault(); setDragOverId(id); },
+    onDrop: () => doReorder(id),
+    onDragEnd: () => { activeDragId.current = null; setDragOverId(null); },
+    onTouchStart: () => { activeDragId.current = id; },
+    onTouchMove: handleTouchMove,
+    onTouchEnd: () => {
+      if (activeDragId.current && dragOverId) doReorder(dragOverId);
+      else { activeDragId.current = null; setDragOverId(null); }
+    },
+  };
 
   return (
     <div>
@@ -69,6 +91,8 @@ export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDelete
         const categoryItems = items.filter(i => i.category === category);
         const isBeer = category === 'piva';
         const bgColor = CATEGORY_BG[category];
+        const minH = isBeer ? 'min-h-[130px]' : 'min-h-[72px]';
+        const doReorder = makeReorder(categoryItems);
 
         return (
           <div
@@ -76,7 +100,7 @@ export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDelete
             id={`section-${category}`}
             className={`flex ${sectionIdx > 0 ? 'border-t-4 border-[#F0F0F0]' : ''}`}
           >
-            {/* Vertical category label — left sidebar */}
+            {/* Vertical category label */}
             <div
               className="shrink-0 flex items-center justify-center py-4"
               style={{ width: 32, backgroundColor: bgColor }}
@@ -91,44 +115,77 @@ export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDelete
 
             {/* Items grid */}
             <div className="flex-1 min-w-0 p-3">
-              <div className={`grid gap-3 ${'grid-cols-2 md:grid-cols-3'}`}>
-                {categoryItems.map(item => (
-                  <div
-                    key={item.id}
-                    className="relative"
-                    draggable={editMode}
-                    onDragStart={() => handleDragStart(item.id)}
-                    onDragOver={e => editMode && handleDragOver(e, item.id)}
-                    onDrop={() => editMode && handleDrop(item.id, categoryItems)}
-                    onDragEnd={handleDragEnd}
-                    style={dragOverId === item.id ? { outline: '2px dashed #1A1A1A', borderRadius: 12, opacity: 0.8 } : undefined}
-                  >
-                    {isBeer || item.isBeer
-                      ? <BeerCard item={item} qty={getQty(item.id)} onTap={() => !editMode && onAddItem(item)} dimmed={editMode} bgColor={bgColor} />
-                      : <ItemCard item={item} qty={getQty(item.id)} onTap={() => !editMode && onAddItem(item)} dimmed={editMode} bgColor={bgColor} />
-                    }
-                    {editMode && (
-                      <CardEditOverlay
-                        itemId={item.id}
-                        cardSize={item.cardSize ?? 'md'}
-                        onDelete={onDeleteItem}
-                        onResize={onResizeItem}
-                        onEdit={onEditItem}
-                      />
-                    )}
-                  </div>
-                ))}
+              <div className="grid gap-3 grid-cols-2 md:grid-cols-3">
+                {categoryItems.map(item => {
+                  const isOver = dragOverId === item.id;
+
+                  if (item.isSpacer) {
+                    return (
+                      <div
+                        key={item.id}
+                        data-drag-id={item.id}
+                        {...dragProps(item.id, doReorder)}
+                        style={editMode ? { touchAction: 'none' } : undefined}
+                        className={`${minH} rounded-xl relative ${
+                          editMode
+                            ? `border-2 border-dashed flex items-center justify-center cursor-grab ${isOver ? 'border-[#888] bg-[#F0F0F0]' : 'border-[#E0E0E0]'}`
+                            : ''
+                        }`}
+                      >
+                        {editMode && (
+                          <button
+                            onClick={() => onDeleteItem(item.id)}
+                            className="w-7 h-7 rounded-full bg-[#E8E8E8] text-[#9B9B9B] text-[15px] flex items-center justify-center font-bold hover:bg-[#C8102E] hover:text-white transition-colors"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={item.id}
+                      data-drag-id={item.id}
+                      className="relative"
+                      {...dragProps(item.id, doReorder)}
+                      style={editMode ? { touchAction: 'none', ...(isOver ? { outline: '2px dashed #1A1A1A', borderRadius: 12, opacity: 0.8 } : {}) } : undefined}
+                    >
+                      {isBeer || item.isBeer
+                        ? <BeerCard item={item} qty={getQty(item.id)} onTap={() => !editMode && onAddItem(item)} dimmed={editMode} bgColor={bgColor} />
+                        : <ItemCard item={item} qty={getQty(item.id)} onTap={() => !editMode && onAddItem(item)} dimmed={editMode} bgColor={bgColor} />
+                      }
+                      {editMode && (
+                        <CardEditOverlay
+                          itemId={item.id}
+                          cardSize={item.cardSize ?? 'md'}
+                          onDelete={onDeleteItem}
+                          onResize={onResizeItem}
+                          onEdit={onEditItem}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
 
                 {editMode && (
-                  <button
-                    onClick={() => onOpenAddForm(category)}
-                    className={`border-2 border-dashed border-[#E8E8E8] rounded-xl text-[#9B9B9B] text-[13px] font-medium flex flex-col items-center justify-center gap-1 active:bg-[#F8F8F8] ${
-                      isBeer ? 'min-h-[130px]' : 'min-h-[72px]'
-                    }`}
-                  >
-                    <span className="text-[24px] font-light leading-none">+</span>
-                    <span>Přidat</span>
-                  </button>
+                  <>
+                    <button
+                      onClick={() => onOpenAddForm(category)}
+                      className={`border-2 border-dashed border-[#E8E8E8] rounded-xl text-[#9B9B9B] text-[13px] font-medium flex flex-col items-center justify-center gap-1 active:bg-[#F8F8F8] ${minH}`}
+                    >
+                      <span className="text-[24px] font-light leading-none">+</span>
+                      <span>Přidat</span>
+                    </button>
+                    <button
+                      onClick={() => onAddSpacer(category)}
+                      className={`border-2 border-dashed border-[#E0E0E0] rounded-xl text-[#B0B0B0] text-[13px] font-medium flex flex-col items-center justify-center gap-1 active:bg-[#F8F8F8] ${minH}`}
+                    >
+                      <span className="text-[20px] leading-none opacity-60">⬚</span>
+                      <span>Mezera</span>
+                    </button>
+                  </>
                 )}
               </div>
             </div>
