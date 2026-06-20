@@ -39,7 +39,7 @@ async function postOrder(record: OrderRecord): Promise<boolean> {
       credentials: 'include',
       body: JSON.stringify(record),
     });
-    // 201 = created, 409 = already exists — both mean it's safely in the DB
+    // 2xx = created, 409 = duplicate — either way it's safely in the DB
     return r.ok || r.status === 409;
   } catch {
     return false;
@@ -52,6 +52,25 @@ export function useOrderHistory() {
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [offlineQueueSize, setOfflineQueueSize] = useState(() => loadQueue().length);
   const isFlushing = useRef(false);
+
+  // Tracks every optimistically-added record until the server confirms it.
+  // Initialized from the persisted queue so records stay visible after a reload
+  // while the queue hasn't been flushed yet.
+  const unconfirmed = useRef<Map<string, OrderRecord>>(
+    new Map(loadQueue().map(o => [o.id, o]))
+  );
+
+  // Merge server data with any records we've added optimistically but the
+  // server hasn't returned yet (in-flight or queued while offline).
+  const mergeAndSet = useCallback((serverData: OrderRecord[]) => {
+    const serverIds = new Set(serverData.map(o => o.id));
+    // Drop from unconfirmed anything the server now knows about
+    for (const id of [...unconfirmed.current.keys()]) {
+      if (serverIds.has(id)) unconfirmed.current.delete(id);
+    }
+    const localOnly = Array.from(unconfirmed.current.values()).filter(o => !serverIds.has(o.id));
+    setRecords([...localOnly, ...serverData]);
+  }, []);
 
   const flushQueue = useCallback(async () => {
     if (isFlushing.current) return;
@@ -71,17 +90,17 @@ export function useOrderHistory() {
   const fetchRecords = useCallback(async () => {
     setRefreshing(true);
     try {
-      // Flush offline queue before fetching so the returned list is up to date
+      // Push any queued orders to DB before fetching so the list is current
       await flushQueue();
       const r = await fetch('/api/orders', { credentials: 'include' });
       if (r.ok) {
         const data: OrderRecord[] = await r.json();
-        setRecords(data);
+        mergeAndSet(data);
         setLastRefreshed(new Date());
       }
     } catch { /* server unreachable */ }
     finally { setRefreshing(false); }
-  }, [flushQueue]);
+  }, [flushQueue, mergeAndSet]);
 
   // Initial load + auto-refresh every 30 s
   useEffect(() => {
@@ -107,20 +126,23 @@ export function useOrderHistory() {
       manualNote,
     };
 
-    // Optimistic update — show immediately in UI
+    // Track optimistically so fetchRecords never wipes it before server confirms
+    unconfirmed.current.set(record.id, record);
     setRecords(prev => [record, ...prev]);
 
     const ok = await postOrder(record);
     if (!ok) {
-      // Network down — queue for later sync
+      // Network down — persist to queue for retry on reconnect
       const queue = loadQueue();
       queue.push(record);
       saveQueue(queue);
       setOfflineQueueSize(queue.length);
     }
+    // If ok: server has it — unconfirmed entry cleaned up on next fetchRecords
   };
 
   const deleteRecord = async (id: string) => {
+    unconfirmed.current.delete(id);
     setRecords(prev => prev.filter(r => r.id !== id));
     try {
       const r = await fetch(`/api/orders/${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'include' });
