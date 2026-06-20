@@ -1,16 +1,10 @@
 import { useState } from 'react';
-import type { MenuItem, Category } from '../types';
-
-const CATEGORIES: { id: Category; label: string }[] = [
-  { id: 'piva',    label: 'Piva' },
-  { id: 'napoje',  label: 'Nápoje' },
-  { id: 'alkohol', label: 'Alkohol' },
-  { id: 'jidlo',   label: 'Jídlo' },
-];
+import type { MenuItem, CategoryDef } from '../types';
 
 interface AddProps {
   mode: 'add';
-  activeCategory: Category;
+  activeCategory: string;
+  categories: CategoryDef[];
   allItems: MenuItem[];
   onSave: (item: MenuItem, afterId: string) => void;
   onClose: () => void;
@@ -19,6 +13,7 @@ interface AddProps {
 interface EditProps {
   mode: 'edit';
   editItem: MenuItem;
+  categories: CategoryDef[];
   allItems: MenuItem[];
   onUpdate: (item: MenuItem) => void;
   onClose: () => void;
@@ -34,17 +29,18 @@ export function AddItemModal(props: Props) {
   const isEdit = props.mode === 'edit';
   const initial = isEdit ? props.editItem : null;
 
-  const [name, setName]       = useState(initial?.name ?? '');
-  const [size, setSize]       = useState(initial?.size ?? '');
-  const [price, setPrice]     = useState(initial ? String(initial.price) : '');
-  const [category, setCategory] = useState<Category>(
+  const [name, setName]         = useState(initial?.name ?? '');
+  const [size, setSize]         = useState(initial?.size ?? '');
+  const [price, setPrice]       = useState(initial ? String(initial.price) : '');
+  const [category, setCategory] = useState<string>(
     isEdit ? props.editItem.category : (props as AddProps).activeCategory
   );
-  const [afterId, setAfterId] = useState('__end__');
+  const [isBeer, setIsBeer]     = useState(initial?.isBeer ?? false);
+  const [afterId, setAfterId]   = useState('__end__');
 
-  const filteredItems = props.allItems.filter(i => i.category === category && (!isEdit || i.id !== initial?.id));
+  const filteredItems = props.allItems.filter(i => i.category === category && !i.isSpacer && (!isEdit || i.id !== initial?.id));
 
-  const handleCategoryChange = (cat: Category) => {
+  const handleCategoryChange = (cat: string) => {
     setCategory(cat);
     setAfterId('__end__');
   };
@@ -60,7 +56,7 @@ export function AddItemModal(props: Props) {
         size: size.trim() || undefined,
         price: priceNum,
         category,
-        isBeer: category === 'piva',
+        isBeer,
       };
       props.onUpdate(updated);
     } else {
@@ -70,7 +66,7 @@ export function AddItemModal(props: Props) {
         size: size.trim() || undefined,
         price: priceNum,
         category,
-        isBeer: category === 'piva',
+        isBeer,
       };
       (props as AddProps).onSave(item, afterId);
     }
@@ -139,12 +135,12 @@ export function AddItemModal(props: Props) {
           {/* Category */}
           <div>
             <label className="block text-[11px] uppercase tracking-[0.08em] text-[#9B9B9B] mb-1">Kategorie</label>
-            <div className="grid grid-cols-4 gap-2">
-              {CATEGORIES.map(cat => (
+            <div className="flex flex-wrap gap-2">
+              {props.categories.map(cat => (
                 <button
                   key={cat.id}
                   onClick={() => handleCategoryChange(cat.id)}
-                  className={`py-2 rounded-[10px] text-[13px] font-medium border transition-colors ${
+                  className={`py-2 px-3 rounded-[10px] text-[13px] font-medium border transition-colors ${
                     category === cat.id
                       ? 'border-[#1A1A1A] bg-[#1A1A1A] text-white'
                       : 'border-[#E8E8E8] text-[#6B6B6B] bg-white'
@@ -154,6 +150,19 @@ export function AddItemModal(props: Props) {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Beer toggle */}
+          <div>
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <div
+                onClick={() => setIsBeer(v => !v)}
+                className={`w-10 h-6 rounded-full transition-colors relative shrink-0 ${isBeer ? 'bg-[#1A1A1A]' : 'bg-[#E8E8E8]'}`}
+              >
+                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isBeer ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </div>
+              <span className="text-[13px] text-[#6B6B6B]">Zobrazit jako výčepní (BeerCard)</span>
+            </label>
           </div>
 
           {/* Position — only for new items */}

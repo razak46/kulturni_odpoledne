@@ -1,34 +1,28 @@
-import type { Category } from '../types';
+import type { CategoryDef } from '../types';
 import type { ReactNode } from 'react';
 
-const TABS: { id: Category; label: string }[] = [
-  { id: 'piva',    label: 'Pivo & Limo' },
-  { id: 'napoje',  label: 'Nápoje' },
-  { id: 'alkohol', label: 'Alkohol' },
-  { id: 'jidlo',   label: 'Jídlo' },
-];
-
 interface Props {
-  activeTab: Category;
-  onChange: (tab: Category) => void;
+  categories: CategoryDef[];
+  activeTab: string;
+  onChange: (tab: string) => void;
   rightSlot?: ReactNode;
 }
 
-export function TabBar({ activeTab, onChange, rightSlot }: Props) {
+export function TabBar({ categories, activeTab, onChange, rightSlot }: Props) {
   return (
     <div className="flex items-center h-12">
       <div className="flex items-center gap-0.5 px-2 h-full">
-        {TABS.map(tab => (
+        {categories.map(cat => (
           <button
-            key={tab.id}
-            onClick={() => onChange(tab.id)}
+            key={cat.id}
+            onClick={() => onChange(cat.id)}
             className={`h-8 px-3.5 rounded-full text-[13px] font-semibold transition-all ${
-              activeTab === tab.id
+              activeTab === cat.id
                 ? 'bg-[#1A1A1A] text-white'
                 : 'text-[#9B9B9B] hover:text-[#1A1A1A]'
             }`}
           >
-            {tab.label}
+            {cat.label}
           </button>
         ))}
       </div>

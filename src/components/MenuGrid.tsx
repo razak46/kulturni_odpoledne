@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react';
-import type { Category, MenuItem } from '../types';
-import { CATEGORY_BG } from '../data/colors';
+import type { MenuItem } from '../types';
 import { BeerCard } from './BeerCard';
 import { ItemCard } from './ItemCard';
 import { CardEditOverlay } from './CardEditOverlay';
 
 interface Props {
-  activeTab: Category;
+  activeTab: string;
+  bgColor: string;
   items: MenuItem[];
   getQty: (id: string) => number;
   onAddItem: (item: MenuItem) => void;
@@ -19,11 +19,10 @@ interface Props {
   onAddSpacer: () => void;
 }
 
-export function MenuGrid({ activeTab, items, getQty, onAddItem, editMode, onDeleteItem, onResizeItem, onEditItem, onReorder, onOpenAddForm, onAddSpacer }: Props) {
+export function MenuGrid({ activeTab, bgColor, items, getQty, onAddItem, editMode, onDeleteItem, onResizeItem, onEditItem, onReorder, onOpenAddForm, onAddSpacer }: Props) {
   const categoryItems = items.filter(item => item.category === activeTab);
-  const isBeerTab = activeTab === 'piva';
-  const bgColor = CATEGORY_BG[activeTab];
-  const minH = isBeerTab ? 'min-h-[130px]' : 'min-h-[72px]';
+  const hasBeer = categoryItems.some(i => i.isBeer);
+  const minH = hasBeer ? 'min-h-[130px]' : 'min-h-[72px]';
 
   const activeDragId = useRef<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -45,13 +44,11 @@ export function MenuGrid({ activeTab, items, getQty, onAddItem, editMode, onDele
     setDragOverId(null);
   };
 
-  // Mouse drag
   const handleDragStart = (id: string) => { activeDragId.current = id; };
   const handleDragOver = (e: React.DragEvent, id: string) => { e.preventDefault(); setDragOverId(id); };
   const handleDrop = (targetId: string) => doReorder(targetId);
   const handleDragEnd = () => { activeDragId.current = null; setDragOverId(null); };
 
-  // Touch drag (iPad)
   const handleTouchStart = (id: string) => { activeDragId.current = id; };
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!activeDragId.current) return;
@@ -117,7 +114,7 @@ export function MenuGrid({ activeTab, items, getQty, onAddItem, editMode, onDele
               {...dragProps(item.id)}
               style={editMode ? { touchAction: 'none', ...(isOver ? { outline: '2px dashed #1A1A1A', borderRadius: 12, opacity: 0.8 } : {}) } : undefined}
             >
-              {isBeerTab || item.isBeer
+              {hasBeer || item.isBeer
                 ? <BeerCard item={item} qty={getQty(item.id)} onTap={() => !editMode && onAddItem(item)} dimmed={editMode} bgColor={bgColor} />
                 : <ItemCard item={item} qty={getQty(item.id)} onTap={() => !editMode && onAddItem(item)} dimmed={editMode} bgColor={bgColor} />
               }

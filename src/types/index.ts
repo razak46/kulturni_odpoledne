@@ -1,5 +1,11 @@
-export type Category = 'piva' | 'napoje' | 'alkohol' | 'jidlo';
+export type Category = string;
 export type CardSize = 'sm' | 'md' | 'lg';
+
+export interface CategoryDef {
+  id: string;
+  label: string;
+  bgColor: string;
+}
 
 export interface MenuItem {
   id: string;

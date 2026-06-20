@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react';
-import type { Category, MenuItem } from './types';
+import { useState, useCallback, useEffect } from 'react';
+import type { MenuItem } from './types';
 import { useOrder } from './hooks/useOrder';
 import { useMenu } from './hooks/useMenu';
+import { useCategories } from './hooks/useCategories';
 import { useLogo } from './hooks/useLogo';
 import { useFullscreen } from './hooks/useFullscreen';
 import { useFontScale } from './hooks/useFontScale';
@@ -18,33 +19,42 @@ import { LogoSlot } from './components/LogoSlot';
 import { OrderHistoryView } from './components/OrderHistoryView';
 import { ManualOrderModal } from './components/ManualOrderModal';
 import { Calculator } from './components/Calculator';
+import { CategoryManagerModal } from './components/CategoryManagerModal';
 
 type ViewMode = 'tabs' | 'all';
 
 export default function App() {
   const { user, loading: authLoading, login, logout } = useAuth();
 
-  // Show a blank screen while the session check is in flight
   if (authLoading) return <div className="min-h-screen bg-[#F8F8F8]" />;
-
-  // Gate the whole app behind authentication
   if (!user) return <LoginScreen onLogin={login} />;
 
   return <PosApp onLogout={logout} />;
 }
 
 function PosApp({ onLogout }: { onLogout: () => void }) {
-  const [activeTab, setActiveTab] = useState<Category>('piva');
-  const [visibleSection, setVisibleSection] = useState<Category>('piva');
+  const { categories, addCategory, updateCategory, deleteCategory } = useCategories();
+
+  const [activeTab, setActiveTab] = useState<string>(() => categories[0]?.id ?? '');
+  const [visibleSection, setVisibleSection] = useState<string>(() => categories[0]?.id ?? '');
   const [viewMode, setViewMode] = useState<ViewMode>('tabs');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [addFormCategory, setAddFormCategory] = useState<Category | null>(null);
+  const [addFormCategory, setAddFormCategory] = useState<string | null>(null);
   const [showResetMenuConfirm, setShowResetMenuConfirm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const [showCalc, setShowCalc] = useState(false);
-  const scrollToSection = useCallback((cat: Category) => {
+  const [showManageCategories, setShowManageCategories] = useState(false);
+
+  // If the active tab was deleted, fall back to first category
+  useEffect(() => {
+    const ids = new Set(categories.map(c => c.id));
+    if (!ids.has(activeTab)) setActiveTab(categories[0]?.id ?? '');
+    if (!ids.has(visibleSection)) setVisibleSection(categories[0]?.id ?? '');
+  }, [categories]);
+
+  const scrollToSection = useCallback((cat: string) => {
     document.getElementById(`section-${cat}`)?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
@@ -87,11 +97,17 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
     setShowResetMenuConfirm(false);
   };
 
-  // Edit mode banner shown below the top bar
+  // Edit mode banner
   const EditBar = () => (
     <div className="bg-[#1A1A1A] px-4 py-2 flex items-center justify-between shrink-0">
       <span className="text-[12px] text-white font-medium tracking-wide">Úprava nabídky — klepnutím na − odstraníte položku</span>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setShowManageCategories(true)}
+          className="text-[12px] bg-white/10 text-white/80 px-3 py-1 rounded-lg font-medium hover:bg-white/20 transition-colors"
+        >
+          Kategorie
+        </button>
         {showResetMenuConfirm ? (
           <div className="flex items-center gap-2">
             <span className="text-[12px] text-white/70">Obnovit výchozí nabídku?</span>
@@ -111,7 +127,6 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
     </div>
   );
 
-  // Edit toggle button — used in top bar
   const editBtn = (
     <button
       onClick={toggleEdit}
@@ -126,7 +141,6 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
     </button>
   );
 
-  // View mode toggle pill
   const viewToggle = (
     <div className="flex items-center bg-[#F0F0F0] rounded-lg p-[3px]">
       <button
@@ -148,7 +162,6 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
     </div>
   );
 
-  // Fullscreen toggle button
   const fullscreenBtn = (
     <button
       onClick={toggleFullscreen}
@@ -167,7 +180,6 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
     </button>
   );
 
-  // Calculator button
   const calcBtn = (
     <button
       type="button"
@@ -219,7 +231,6 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
     </button>
   );
 
-  // Controls group: view toggle + edit button — right side of top bar
   const topBarControls = (
     <div className="flex items-center gap-2 pr-3">
       {viewToggle}
@@ -231,11 +242,13 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
     </div>
   );
 
-  // Menu content
+  const activeCatDef = categories.find(c => c.id === activeTab);
+
   const MenuContent = () => (
     viewMode === 'tabs' ? (
       <MenuGrid
         activeTab={activeTab}
+        bgColor={activeCatDef?.bgColor ?? '#F8F8F8'}
         items={items}
         getQty={getQty}
         onAddItem={addItem}
@@ -249,6 +262,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
       />
     ) : (
       <AllCategoriesView
+        categories={categories}
         items={items}
         getQty={getQty}
         onAddItem={addItem}
@@ -257,7 +271,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
         onResizeItem={resizeMenuItem}
         onEditItem={setEditingItemId}
         onReorder={reorderMenuItems}
-        onOpenAddForm={(cat) => setAddFormCategory(cat as Category)}
+        onOpenAddForm={(cat) => setAddFormCategory(cat)}
         onAddSpacer={addSpacer}
         onVisibleSection={setVisibleSection}
       />
@@ -267,17 +281,16 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
   return (
     <div className="min-h-screen bg-[#EFEDE9] font-sans">
 
-      {/* ── Desktop two-column layout (lg = 1024px, iPad landscape and larger) ── */}
+      {/* ── Desktop two-column layout ── */}
       <div className="hidden lg:flex h-screen overflow-hidden">
-        {/* Left column */}
         <div className="flex-1 flex flex-col overflow-hidden" style={{ flexBasis: '65%' }}>
-          {/* Top bar: logo + tabs + controls */}
           <div className="bg-white border-b border-[#EBEBEB] shadow-sm shrink-0 flex items-center">
             <div className="pl-3 shrink-0">
               <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} editMode={editMode} />
             </div>
             <div className="flex-1 min-w-0">
               <TabBar
+                categories={categories}
                 activeTab={viewMode === 'tabs' ? activeTab : visibleSection}
                 onChange={viewMode === 'tabs' ? setActiveTab : scrollToSection}
                 rightSlot={topBarControls}
@@ -290,7 +303,6 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
           </div>
         </div>
 
-        {/* Right column */}
         <div className="bg-white border-l border-[#EBEBEB] flex flex-col overflow-hidden" style={{ flexBasis: '35%' }}>
           <OrderPanel
             orderItems={orderItems}
@@ -306,15 +318,15 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
         </div>
       </div>
 
-      {/* ── Mobile/tablet single-column layout (up to lg = 1024px, portrait iPad and phones) ── */}
+      {/* ── Mobile/tablet single-column layout ── */}
       <div className="lg:hidden fixed inset-0 flex flex-col overflow-hidden" style={{ paddingBottom: 64 }}>
-        {/* Top bar */}
         <div className="bg-white border-b border-[#EBEBEB] shadow-sm shrink-0 flex items-center z-10">
           <div className="pl-3 shrink-0">
             <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} editMode={editMode} />
           </div>
           <div className="flex-1 min-w-0">
             <TabBar
+              categories={categories}
               activeTab={viewMode === 'tabs' ? activeTab : visibleSection}
               onChange={viewMode === 'tabs' ? setActiveTab : scrollToSection}
               rightSlot={topBarControls}
@@ -327,7 +339,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
         </div>
       </div>
 
-      {/* Mobile/tablet sticky bottom bar */}
+      {/* Mobile sticky bottom bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#1A1A1A] border-t border-[#2A2A2A] flex items-center justify-between px-4 z-20">
         <div>
           <div className="text-[10px] uppercase tracking-[0.12em] text-[#666] font-semibold leading-none mb-0.5">Celkem</div>
@@ -350,7 +362,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
         </div>
       </div>
 
-      {/* Mobile/tablet bottom sheet */}
+      {/* Mobile bottom sheet */}
       {sheetOpen && (
         <div className="lg:hidden fixed inset-0 z-30">
           <div className="absolute inset-0 bg-black/40" onClick={() => setSheetOpen(false)} />
@@ -382,6 +394,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
         <AddItemModal
           mode="add"
           activeCategory={addFormCategory}
+          categories={categories}
           allItems={items}
           onSave={handleAddItem}
           onClose={() => setAddFormCategory(null)}
@@ -393,13 +406,14 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
         <AddItemModal
           mode="edit"
           editItem={editingItem}
+          categories={categories}
           allItems={items}
           onUpdate={updateMenuItem}
           onClose={() => setEditingItemId(null)}
         />
       )}
 
-      {/* Zaplatit FAB — always visible bottom-right */}
+      {/* Zaplatit FAB */}
       <div className="hidden lg:block">
         <PayButton total={total} itemCount={itemCount} onPay={() => handleDokoncit()} bottomRem={1.5} />
       </div>
@@ -407,7 +421,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
         <PayButton total={total} itemCount={itemCount} onPay={() => handleDokoncit(true)} bottomRem={5} />
       </div>
 
-      {/* Order history overlay */}
+      {/* Order history */}
       {showHistory && (
         <OrderHistoryView
           records={records}
@@ -432,6 +446,18 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
 
       {/* Calculator */}
       {showCalc && <Calculator onClose={() => setShowCalc(false)} />}
+
+      {/* Category manager */}
+      {showManageCategories && (
+        <CategoryManagerModal
+          categories={categories}
+          menuItems={items}
+          onAdd={addCategory}
+          onUpdate={updateCategory}
+          onDelete={deleteCategory}
+          onClose={() => setShowManageCategories(false)}
+        />
+      )}
     </div>
   );
 }

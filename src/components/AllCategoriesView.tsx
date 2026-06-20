@@ -1,11 +1,11 @@
 import { useRef, useState, useEffect } from 'react';
-import type { MenuItem, Category } from '../types';
-import { CATEGORY_ORDER, CATEGORY_LABEL, CATEGORY_BG } from '../data/colors';
+import type { MenuItem, CategoryDef } from '../types';
 import { BeerCard } from './BeerCard';
 import { ItemCard } from './ItemCard';
 import { CardEditOverlay } from './CardEditOverlay';
 
 interface Props {
+  categories: CategoryDef[];
   items: MenuItem[];
   getQty: (id: string) => number;
   onAddItem: (item: MenuItem) => void;
@@ -15,35 +15,35 @@ interface Props {
   onEditItem: (id: string) => void;
   onReorder: (orderedIds: string[]) => void;
   onOpenAddForm: (category: string) => void;
-  onAddSpacer: (category: Category) => void;
-  onVisibleSection?: (cat: Category) => void;
+  onAddSpacer: (category: string) => void;
+  onVisibleSection?: (cat: string) => void;
 }
 
-export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDeleteItem, onResizeItem, onEditItem, onReorder, onOpenAddForm, onAddSpacer, onVisibleSection }: Props) {
+export function AllCategoriesView({ categories, items, getQty, onAddItem, editMode, onDeleteItem, onResizeItem, onEditItem, onReorder, onOpenAddForm, onAddSpacer, onVisibleSection }: Props) {
   const activeDragId = useRef<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!onVisibleSection) return;
-    const ratios = new Map<Category, number>();
+    const ratios = new Map<string, number>();
     const obs = new IntersectionObserver(
       (changes) => {
         changes.forEach(e => {
-          const cat = (e.target as HTMLElement).dataset.cat as Category;
+          const cat = (e.target as HTMLElement).dataset.cat as string;
           ratios.set(cat, e.isIntersecting ? e.intersectionRatio : 0);
         });
-        for (const cat of CATEGORY_ORDER) {
-          if ((ratios.get(cat) ?? 0) > 0) { onVisibleSection(cat); return; }
+        for (const { id } of categories) {
+          if ((ratios.get(id) ?? 0) > 0) { onVisibleSection(id); return; }
         }
       },
       { rootMargin: '0px 0px -50% 0px', threshold: 0 },
     );
-    CATEGORY_ORDER.forEach(cat => {
-      const el = document.getElementById(`section-${cat}`);
-      if (el) { (el as HTMLElement).dataset.cat = cat; obs.observe(el); }
+    categories.forEach(({ id }) => {
+      const el = document.getElementById(`section-${id}`);
+      if (el) { el.dataset.cat = id; obs.observe(el); }
     });
     return () => obs.disconnect();
-  }, [onVisibleSection]);
+  }, [onVisibleSection, categories]);
 
   const makeReorder = (categoryItems: MenuItem[]) => (targetId: string) => {
     if (!activeDragId.current || activeDragId.current === targetId) { setDragOverId(null); return; }
@@ -71,7 +71,7 @@ export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDelete
     }
   };
 
-  const dragProps = (id: string, doReorder: (targetId: string) => void) => !editMode ? {} : {
+  const dragProps = (id: string, doReorder: (t: string) => void) => !editMode ? {} : {
     draggable: true as const,
     onDragStart: () => { activeDragId.current = id; },
     onDragOver: (e: React.DragEvent) => { e.preventDefault(); setDragOverId(id); },
@@ -87,17 +87,17 @@ export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDelete
 
   return (
     <div>
-      {CATEGORY_ORDER.map((category, sectionIdx) => {
-        const categoryItems = items.filter(i => i.category === category);
-        const isBeer = category === 'piva';
-        const bgColor = CATEGORY_BG[category];
-        const minH = isBeer ? 'min-h-[130px]' : 'min-h-[72px]';
+      {categories.map((category, sectionIdx) => {
+        const categoryItems = items.filter(i => i.category === category.id);
+        const hasBeer = categoryItems.some(i => i.isBeer);
+        const bgColor = category.bgColor;
+        const minH = hasBeer ? 'min-h-[130px]' : 'min-h-[72px]';
         const doReorder = makeReorder(categoryItems);
 
         return (
           <div
-            key={category}
-            id={`section-${category}`}
+            key={category.id}
+            id={`section-${category.id}`}
             className={`flex ${sectionIdx > 0 ? 'border-t-4 border-[#F0F0F0]' : ''}`}
           >
             {/* Vertical category label */}
@@ -109,7 +109,7 @@ export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDelete
                 className="text-[10px] uppercase font-bold tracking-[0.15em] text-[#9B9B9B] select-none"
                 style={{ writingMode: 'vertical-lr', transform: 'rotate(180deg)' }}
               >
-                {CATEGORY_LABEL[category]}
+                {category.label}
               </span>
             </div>
 
@@ -152,7 +152,7 @@ export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDelete
                       {...dragProps(item.id, doReorder)}
                       style={editMode ? { touchAction: 'none', ...(isOver ? { outline: '2px dashed #1A1A1A', borderRadius: 12, opacity: 0.8 } : {}) } : undefined}
                     >
-                      {isBeer || item.isBeer
+                      {hasBeer || item.isBeer
                         ? <BeerCard item={item} qty={getQty(item.id)} onTap={() => !editMode && onAddItem(item)} dimmed={editMode} bgColor={bgColor} />
                         : <ItemCard item={item} qty={getQty(item.id)} onTap={() => !editMode && onAddItem(item)} dimmed={editMode} bgColor={bgColor} />
                       }
@@ -172,14 +172,14 @@ export function AllCategoriesView({ items, getQty, onAddItem, editMode, onDelete
                 {editMode && (
                   <>
                     <button
-                      onClick={() => onOpenAddForm(category)}
+                      onClick={() => onOpenAddForm(category.id)}
                       className={`border-2 border-dashed border-[#E8E8E8] rounded-xl text-[#9B9B9B] text-[13px] font-medium flex flex-col items-center justify-center gap-1 active:bg-[#F8F8F8] ${minH}`}
                     >
                       <span className="text-[24px] font-light leading-none">+</span>
                       <span>Přidat</span>
                     </button>
                     <button
-                      onClick={() => onAddSpacer(category)}
+                      onClick={() => onAddSpacer(category.id)}
                       className={`border-2 border-dashed border-[#E0E0E0] rounded-xl text-[#B0B0B0] text-[13px] font-medium flex flex-col items-center justify-center gap-1 active:bg-[#F8F8F8] ${minH}`}
                     >
                       <span className="text-[20px] leading-none opacity-60">⬚</span>

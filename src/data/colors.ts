@@ -1,17 +1,21 @@
-import type { Category } from '../types';
+import type { CategoryDef } from '../types';
 
-export const CATEGORY_BG: Record<Category, string> = {
-  piva:    '#FFFBEB', // warm amber
-  napoje:  '#EFF6FF', // sky blue
-  alkohol: '#F5F3FF', // soft lavender
-  jidlo:   '#F0FDF4', // mint green
-};
+export const DEFAULT_CATEGORIES: CategoryDef[] = [
+  { id: 'piva',    label: 'Pivo & Limo', bgColor: '#FFFBEB' },
+  { id: 'napoje',  label: 'Nápoje',      bgColor: '#EFF6FF' },
+  { id: 'alkohol', label: 'Alkohol',     bgColor: '#F5F3FF' },
+  { id: 'jidlo',   label: 'Jídlo',       bgColor: '#F0FDF4' },
+];
 
-export const CATEGORY_LABEL: Record<Category, string> = {
-  piva:    'Pivo & Limo',
-  napoje:  'Nápoje',
-  alkohol: 'Alkohol',
-  jidlo:   'Jídlo',
-};
-
-export const CATEGORY_ORDER: Category[] = ['piva', 'napoje', 'alkohol', 'jidlo'];
+export const PRESET_CATEGORY_COLORS: string[] = [
+  '#FFFBEB', // amber
+  '#EFF6FF', // sky
+  '#F5F3FF', // lavender
+  '#F0FDF4', // mint
+  '#FFF1F2', // rose
+  '#FFF7ED', // orange
+  '#F0FDFA', // teal
+  '#F8FAFC', // slate
+  '#FDF4FF', // purple
+  '#FFFDE7', // yellow
+];
