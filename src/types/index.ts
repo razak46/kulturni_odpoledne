@@ -37,4 +37,5 @@ export interface OrderRecord {
   total: number;
   isManual: boolean;
   manualNote?: string;
+  createdOffline?: boolean;
 }

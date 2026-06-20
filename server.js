@@ -61,6 +61,8 @@ async function initDb() {
     )
   `;
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_ts ON orders (timestamp)`;
+  // Migration: add created_offline column if not present (idempotent)
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS created_offline BOOLEAN NOT NULL DEFAULT FALSE`;
   await sql`
     CREATE TABLE IF NOT EXISTS settings (
       key        TEXT PRIMARY KEY,
@@ -217,31 +219,33 @@ app.get('/api/orders', requireAuth, async (_req, res, next) => {
   try {
     const rows = await sql`SELECT * FROM orders ORDER BY timestamp DESC`;
     res.json(rows.map(r => ({
-      id:         r.order_id,
-      timestamp:  Number(r.timestamp),
-      items:      JSON.parse(r.items),
-      total:      r.total,
-      isManual:   r.is_manual === true,
-      manualNote: r.manual_note ?? undefined,
+      id:             r.order_id,
+      timestamp:      Number(r.timestamp),
+      items:          JSON.parse(r.items),
+      total:          r.total,
+      isManual:       r.is_manual === true,
+      manualNote:     r.manual_note ?? undefined,
+      createdOffline: r.created_offline === true || undefined,
     })));
   } catch (err) { next(err); }
 });
 
 app.post('/api/orders', requireAuth, async (req, res, next) => {
   try {
-    const { id, timestamp, items, total, isManual, manualNote } = req.body ?? {};
+    const { id, timestamp, items, total, isManual, manualNote, createdOffline } = req.body ?? {};
     if (!id || !timestamp || total == null) {
       return res.status(400).json({ error: 'Chybí povinná pole (id, timestamp, total)' });
     }
     await sql`
-      INSERT INTO orders (order_id, timestamp, items, total, is_manual, manual_note)
+      INSERT INTO orders (order_id, timestamp, items, total, is_manual, manual_note, created_offline)
       VALUES (
         ${String(id)},
         ${Number(timestamp)},
         ${JSON.stringify(Array.isArray(items) ? items : [])},
         ${Number(total)},
         ${isManual ? true : false},
-        ${manualNote ? String(manualNote) : null}
+        ${manualNote ? String(manualNote) : null},
+        ${createdOffline ? true : false}
       )
     `;
     res.status(201).json({ ok: true });

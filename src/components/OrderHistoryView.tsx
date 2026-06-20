@@ -154,6 +154,11 @@ export function OrderHistoryView({ records, menuItems, onClose, onAddManual, onR
                         ✎ manuální
                       </span>
                     )}
+                    {r.createdOffline && (
+                      <span className="text-[10px] bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8] px-1.5 py-0.5 rounded font-semibold tracking-wide">
+                        ⇅ offline
+                      </span>
+                    )}
                     <span className="text-[12px] text-[#9B9B9B]">{fmtDate(r.timestamp)}</span>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">

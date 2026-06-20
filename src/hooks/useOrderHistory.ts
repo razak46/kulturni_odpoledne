@@ -9,15 +9,11 @@ function todayKey(): string {
   return `${dd}${mm}${yy}`;
 }
 
-function nextDailyCounter(): number {
-  const key = `pos_order_counter_${todayKey()}`;
-  const n = Number(localStorage.getItem(key) ?? 0) + 1;
-  localStorage.setItem(key, String(n));
-  return n;
-}
-
 function generateId(): string {
-  return `${todayKey()}-${String(nextDailyCounter()).padStart(4, '0')}`;
+  // Use crypto.randomUUID for uniqueness across multiple devices.
+  // Keep the date prefix so IDs remain human-readable and sortable.
+  const rand = crypto.randomUUID().replace(/-/g, '').slice(0, 8);
+  return `${todayKey()}-${rand}`;
 }
 
 const POLL_INTERVAL_MS = 30_000;
@@ -132,9 +128,12 @@ export function useOrderHistory() {
 
     const ok = await postOrder(record);
     if (!ok) {
-      // Network down — persist to queue for retry on reconnect
+      // Network down — mark as offline and persist to queue for retry on reconnect
+      const offlineRecord: OrderRecord = { ...record, createdOffline: true };
+      unconfirmed.current.set(record.id, offlineRecord);
+      setRecords(prev => prev.map(r => r.id === record.id ? offlineRecord : r));
       const queue = loadQueue();
-      queue.push(record);
+      queue.push(offlineRecord);
       saveQueue(queue);
       setOfflineQueueSize(queue.length);
     }
