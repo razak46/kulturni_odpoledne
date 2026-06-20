@@ -284,17 +284,19 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
       {/* ── Desktop two-column layout ── */}
       <div className="hidden lg:flex h-screen overflow-hidden">
         <div className="flex-1 flex flex-col overflow-hidden" style={{ flexBasis: '65%' }}>
-          <div className="bg-white border-b border-[#EBEBEB] shadow-sm shrink-0 flex items-center">
-            <div className="pl-3 shrink-0">
-              <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} editMode={editMode} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <TabBar
-                categories={categories}
-                activeTab={viewMode === 'tabs' ? activeTab : visibleSection}
-                onChange={viewMode === 'tabs' ? setActiveTab : scrollToSection}
-                rightSlot={topBarControls}
-              />
+          <div className="bg-white border-b border-[#EBEBEB] shadow-sm shrink-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+            <div className="flex items-center">
+              <div className="pl-3 shrink-0">
+                <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} editMode={editMode} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <TabBar
+                  categories={categories}
+                  activeTab={viewMode === 'tabs' ? activeTab : visibleSection}
+                  onChange={viewMode === 'tabs' ? setActiveTab : scrollToSection}
+                  rightSlot={topBarControls}
+                />
+              </div>
             </div>
           </div>
           {editMode && <EditBar />}
@@ -320,17 +322,19 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
 
       {/* ── Mobile/tablet single-column layout ── */}
       <div className="lg:hidden fixed inset-0 flex flex-col overflow-hidden" style={{ paddingBottom: 64 }}>
-        <div className="bg-white border-b border-[#EBEBEB] shadow-sm shrink-0 flex items-center z-10">
-          <div className="pl-3 shrink-0">
-            <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} editMode={editMode} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <TabBar
-              categories={categories}
-              activeTab={viewMode === 'tabs' ? activeTab : visibleSection}
-              onChange={viewMode === 'tabs' ? setActiveTab : scrollToSection}
-              rightSlot={topBarControls}
-            />
+        <div className="bg-white border-b border-[#EBEBEB] shadow-sm shrink-0 z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+          <div className="flex items-center">
+            <div className="pl-3 shrink-0">
+              <LogoSlot logoUrl={logoUrl} onUpload={uploadLogo} onRemove={removeLogo} editMode={editMode} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <TabBar
+                categories={categories}
+                activeTab={viewMode === 'tabs' ? activeTab : visibleSection}
+                onChange={viewMode === 'tabs' ? setActiveTab : scrollToSection}
+                rightSlot={topBarControls}
+              />
+            </div>
           </div>
         </div>
         {editMode && <EditBar />}
