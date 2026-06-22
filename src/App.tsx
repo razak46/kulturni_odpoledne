@@ -59,7 +59,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
   }, []);
 
   const { logoUrl, uploadLogo, removeLogo } = useLogo();
-  const { records, addRecord, deleteRecord, updateRecord, refresh: refreshOrders, refreshing: ordersRefreshing, lastRefreshed: ordersLastRefreshed, offlineQueueSize } = useOrderHistory();
+  const { records, addRecord, deleteRecord, updateRecord, refresh: refreshOrders, refreshing: ordersRefreshing, lastRefreshed: ordersLastRefreshed, offlineQueueSize, isOnline } = useOrderHistory();
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
   const { zoomIn, zoomOut, canZoomIn, canZoomOut } = useFontScale();
 
@@ -242,6 +242,19 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
     </div>
   );
 
+  const OfflineBanner = ({ queueSize }: { queueSize: number }) => (
+    <div className="bg-[#F59E0B] shrink-0 flex items-center justify-center gap-2 py-1.5 px-4">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+        <path d="M6.5 1L12 11H1L6.5 1Z" stroke="white" strokeWidth="1.4" strokeLinejoin="round"/>
+        <path d="M6.5 5v3M6.5 9.5v.5" stroke="white" strokeWidth="1.4" strokeLinecap="round"/>
+      </svg>
+      <span className="text-white text-[12px] font-semibold">
+        Offline — objednávky se ukládají lokálně
+        {queueSize > 0 && ` (${queueSize} čeká na odeslání)`}
+      </span>
+    </div>
+  );
+
   const activeCatDef = categories.find(c => c.id === activeTab);
 
   const MenuContent = () => (
@@ -299,6 +312,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
               </div>
             </div>
           </div>
+          {!isOnline && <OfflineBanner queueSize={offlineQueueSize} />}
           {editMode && <EditBar />}
           <div className="flex-1 overflow-y-auto">
             <MenuContent />
@@ -337,6 +351,7 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
             </div>
           </div>
         </div>
+        {!isOnline && <OfflineBanner queueSize={offlineQueueSize} />}
         {editMode && <EditBar />}
         <div className="flex-1 overflow-y-auto">
           <MenuContent />
@@ -415,19 +430,6 @@ function PosApp({ onLogout }: { onLogout: () => void }) {
           onUpdate={updateMenuItem}
           onClose={() => setEditingItemId(null)}
         />
-      )}
-
-      {/* Offline queue indicator */}
-      {offlineQueueSize > 0 && (
-        <div style={{ position: 'fixed', left: '1rem', bottom: 'max(1.5rem, calc(1.5rem + env(safe-area-inset-bottom, 0px)))', zIndex: 40 }}>
-          <div className="bg-[#F59E0B] text-white rounded-full px-4 py-2 text-[13px] font-semibold shadow-lg flex items-center gap-1.5">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M7 2v4l2.5 1.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-              <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5"/>
-            </svg>
-            {offlineQueueSize} {offlineQueueSize === 1 ? 'objednávka čeká na sync' : offlineQueueSize < 5 ? 'objednávky čekají na sync' : 'objednávek čeká na sync'}
-          </div>
-        </div>
       )}
 
       {/* Zaplatit FAB */}
